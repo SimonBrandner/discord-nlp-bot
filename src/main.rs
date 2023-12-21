@@ -1,10 +1,8 @@
 mod config;
 
-use std::collections::hash_map::Values;
-
 use clap::Parser;
 
-use serenity::all::{ChannelId, ChannelType, GuildChannel};
+use serenity::all::ChannelType;
 use serenity::async_trait;
 use serenity::builder::GetMessages;
 use serenity::model::id::GuildId;
@@ -18,49 +16,37 @@ struct CommandLineArguments {
     configuration_file: String,
 }
 
-async fn get_channels(context: &Context, channels: Values<'_, ChannelId, GuildChannel>) {
-    println!("Length {}", channels.len());
-
-    for channel in channels {
-        if channel.kind != ChannelType::Text {
-            continue;
-        }
-
-        let guild_name: String;
-        match channel.guild(&context.cache) {
-            Some(guild) => guild_name = guild.name.clone(),
-            None => guild_name = String::from("No guild"),
-        }
-
-        println!("Channel: {}::{}", channel.name, guild_name);
-
-        match channel
-            .messages(context.http(), GetMessages::new().limit(100))
-            .await
-        {
-            Ok(messages) => {
-                for message in messages {
-                    println!("Message: {}", message.content)
-                }
-            }
-            Err(error) => println!("{}", error.to_string()),
-        }
-    }
-}
-
 struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {
         for guild_id in guilds {
-            let channels = context.cache.guild_channels(guild_id).unwrap();
+            let channels = { context.cache.guild(guild_id).unwrap().channels.clone() };
 
-            /*match context.cache.guild_channels(guild_id) {
-                Some(channels) => _channels = channels.values(),
-                None => println!("No channels"),
-            }*/
+            for (_channel_id, channel) in channels {
+                if channel.kind != ChannelType::Text {
+                    continue;
+                }
 
-            get_channels(&context, channels.values()).await;
+                let guild_name = match channel.guild(&context.cache) {
+                    Some(guild) => guild.name.clone(),
+                    None => String::from("No guild"),
+                };
+
+                println!("Guild: {} | Channel: {}", guild_name, channel.name);
+
+                let messages = match channel
+                    .messages(context.http(), GetMessages::new().limit(100))
+                    .await
+                {
+                    Ok(messages) => messages,
+                    Err(_error) => Vec::new(),
+                };
+
+                for message in messages {
+                    println!("Message: {}", message.content)
+                }
+            }
         }
     }
 }
