@@ -1,5 +1,6 @@
 mod config;
 mod discord;
+mod file;
 
 use clap::Parser;
 
