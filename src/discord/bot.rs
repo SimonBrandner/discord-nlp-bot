@@ -5,9 +5,10 @@ use serenity::model::id::GuildId;
 use serenity::prelude::Context;
 use serenity::prelude::*;
 
-struct Handler;
+pub struct DiscordBot {}
+
 #[async_trait]
-impl EventHandler for Handler {
+impl EventHandler for DiscordBot {
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {
         for guild_id in guilds {
             let channels = { context.cache.guild(guild_id).unwrap().channels.clone() };
@@ -37,18 +38,5 @@ impl EventHandler for Handler {
                 }
             }
         }
-    }
-}
-
-pub async fn connect(token: String) {
-    let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
-    let mut client = Client::builder(token, intents)
-        .event_handler(Handler)
-        .await
-        .expect("Error creating client");
-
-    // start listening for events by starting a single shard
-    if let Err(why) = client.start().await {
-        println!("Client error: {why:?}");
     }
 }
