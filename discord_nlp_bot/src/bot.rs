@@ -1,3 +1,4 @@
+use nlp_bot_api::processor::Processor;
 use serenity::all::ChannelType;
 use serenity::async_trait;
 use serenity::builder::GetMessages;
@@ -5,10 +6,32 @@ use serenity::model::id::GuildId;
 use serenity::prelude::Context;
 use serenity::prelude::*;
 
-pub struct DiscordBot {}
+pub async fn start_bot(bot: Bot, token: String) {
+    let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
+
+    let mut client = Client::builder(token, intents)
+        .event_handler(bot)
+        .await
+        .expect("Failed to build client");
+
+    // start listening for events by starting a single shard
+    if let Err(why) = client.start().await {
+        println!("Client error: {why:?}");
+    }
+}
+
+pub struct Bot {
+    processor: Processor,
+}
+
+impl Bot {
+    pub fn new(processor: Processor) -> Self {
+        Self { processor }
+    }
+}
 
 #[async_trait]
-impl EventHandler for DiscordBot {
+impl EventHandler for Bot {
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {
         for guild_id in guilds {
             let channels = { context.cache.guild(guild_id).unwrap().channels.clone() };
