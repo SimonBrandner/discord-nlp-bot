@@ -7,6 +7,8 @@ use clap::Parser;
 use config::read_configuration_from_file;
 use nlp_bot_api::processor::Processor;
 use nlp_bot_api::store::SqlStore;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[derive(clap::Parser, Debug)]
 struct CommandLineArguments {
@@ -21,8 +23,8 @@ async fn main() {
     let configuration = read_configuration_from_file(command_line_arguments.configuration_file);
 
     let store = SqlStore::new(configuration.sql_database_path);
-    let processor = Processor::new(store);
-    let bot = Bot::new(processor);
+    let processor = Arc::new(Mutex::new(Processor::new(store)));
+    let bot = Bot::new(processor.clone());
 
     start_bot(bot, configuration.discord_token).await;
 }

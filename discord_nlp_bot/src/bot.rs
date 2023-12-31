@@ -1,10 +1,14 @@
+use std::sync::Arc;
+
 use nlp_bot_api::processor::Processor;
-use serenity::all::ChannelType;
-use serenity::async_trait;
+use serenity::all::{ChannelType, GatewayIntents};
 use serenity::builder::GetMessages;
+use serenity::client::EventHandler;
+use serenity::http::CacheHttp;
 use serenity::model::id::GuildId;
 use serenity::prelude::Context;
-use serenity::prelude::*;
+use serenity::{async_trait, Client};
+use tokio::sync::Mutex;
 
 pub async fn start_bot(bot: Bot, token: String) {
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
@@ -21,11 +25,11 @@ pub async fn start_bot(bot: Bot, token: String) {
 }
 
 pub struct Bot {
-    processor: Processor,
+    processor: Arc<Mutex<Processor>>,
 }
 
 impl Bot {
-    pub fn new(processor: Processor) -> Self {
+    pub fn new(processor: Arc<Mutex<Processor>>) -> Self {
         Self { processor }
     }
 }
