@@ -61,7 +61,7 @@ impl EventHandler for Bot {
                 };
 
                 for message in messages {
-                    println!("Message: {}", message.content)
+                    println!("Message: {}", message.content);
                 }
             }
         }
