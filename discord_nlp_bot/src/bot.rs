@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use nlp_bot_api::processor::Processor;
 use serenity::all::{ChannelType, GatewayIntents};
 use serenity::builder::GetMessages;
@@ -8,6 +6,7 @@ use serenity::http::CacheHttp;
 use serenity::model::id::GuildId;
 use serenity::prelude::Context;
 use serenity::{async_trait, Client};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub async fn start_bot(bot: Bot, token: String) {
