@@ -12,7 +12,7 @@ impl Processor {
     }
 
     // TODO: Handle edits
-    pub fn add_message(&self, message: message::Message) {
-        self.store.add_message(message);
+    pub async fn add_message(&self, message: message::Message) {
+        self.store.add_message(message).await;
     }
 }

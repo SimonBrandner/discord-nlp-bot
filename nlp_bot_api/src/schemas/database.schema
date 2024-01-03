@@ -1,8 +1,8 @@
 CREATE TABLE messages (
-    id TEXT PRIMARY KEY NOT NULL,
-    sanitized_content TEXT NOT NULL,
-    sender TEXT NOT NULL,
-    room_id TEXT NOT NULL,
     message_id TEXT NOT NULL,
-    unix_timestamp INT NOT NULL
+    container_id TEXT NOT NULL,
+    sender_id TEXT NOT NULL,
+    unix_timestamp INT NOT NULL,
+    content TEXT NOT NULL,
+    sanitized_content TEXT NOT NULL
 );

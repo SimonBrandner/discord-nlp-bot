@@ -1,3 +1,4 @@
+use crate::makers::make_message;
 use nlp_bot_api::processor::Processor;
 use serenity::all::{ChannelType, GatewayIntents};
 use serenity::builder::GetMessages;
@@ -36,6 +37,7 @@ impl Bot {
 #[async_trait]
 impl EventHandler for Bot {
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {
+        log::info!("Discord cache is ready...");
         for guild_id in guilds {
             let channels = { context.cache.guild(guild_id).unwrap().channels.clone() };
 
@@ -56,11 +58,13 @@ impl EventHandler for Bot {
                     .await
                 {
                     Ok(messages) => messages,
-                    Err(_error) => Vec::new(),
+                    Err(_error) => continue,
                 };
 
-                for message in messages {
-                    println!("Message: {}", message.content);
+                let processor = self.processor.lock().await;
+                for discord_message in messages {
+                    println!("Message: {}", discord_message.content);
+                    processor.add_message(make_message(discord_message)).await;
                 }
             }
         }
