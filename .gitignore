@@ -2,5 +2,8 @@ target/
 .vscode/
 target/
 
+.env
 config.json
 database.db
+database.db-shm
+database.db-wal

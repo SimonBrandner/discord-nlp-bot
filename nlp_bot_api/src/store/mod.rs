@@ -1,5 +1,5 @@
 use crate::processor::message;
-use sqlx::{Connection, SqliteConnection};
+use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
 use tokio::sync::Mutex;
 
 pub struct SqlStore {
@@ -8,6 +8,14 @@ pub struct SqlStore {
 
 impl SqlStore {
     pub async fn new(file_path: String) -> Result<Self, sqlx::Error> {
+        if !Sqlite::database_exists(&file_path).await.unwrap_or(false) {
+            log::info!("Database does not exist - creating...");
+            match Sqlite::create_database(&file_path).await {
+                Ok(_) => log::info!("Database created successfully!"),
+                Err(e) => return Err(e),
+            }
+        }
+
         match SqliteConnection::connect(format!("sqlite://{}", file_path).as_str()).await {
             Ok(c) => Ok(Self {
                 connection: Mutex::new(c),

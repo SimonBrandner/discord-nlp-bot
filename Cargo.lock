@@ -1169,6 +1169,8 @@ dependencies = [
 name = "nlp_bot_api"
 version = "0.1.0"
 dependencies = [
+ "env_logger",
+ "log",
  "sqlx",
  "tokio",
 ]
