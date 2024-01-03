@@ -1,0 +1,11 @@
+{
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "[sql]": {
+        "editor.defaultFormatter": "adpyke.vscode-sql-formatter"
+    },
+    "files.associations": {
+        "*.schema": "sql",
+    }
+}
