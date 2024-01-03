@@ -1,3 +1,4 @@
+use crate::processor::container;
 use crate::processor::message;
 use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
 use tokio::sync::Mutex;
@@ -33,6 +34,17 @@ impl SqlStore {
             message.sender_id,
             message.container_id,
             message.unix_timestamp,
-        ).execute(&mut *self.connection.lock().await).await.expect("Failed to write to database");
+        ).execute(&mut *self.connection.lock().await).await.expect("Failed to add message to database!");
+    }
+
+    pub async fn add_container(&self, container: container::Container) {
+        sqlx::query!(
+            "INSERT INTO containers (container_id, container_parent_id) VALUES (?, ?);",
+            container.container_id,
+            container.container_parent_id
+        )
+        .execute(&mut *self.connection.lock().await)
+        .await
+        .expect("Failed to add container to database!");
     }
 }

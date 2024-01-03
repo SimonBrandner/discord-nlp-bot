@@ -6,3 +6,8 @@ CREATE TABLE messages (
     content TEXT NOT NULL,
     sanitized_content TEXT NOT NULL
 );
+
+CREATE TABLE containers (
+    container_id TEXT NOT NULL,
+    container_parent_id TEXT
+);

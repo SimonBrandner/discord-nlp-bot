@@ -1,5 +1,5 @@
 use crate::makers::make_message;
-use nlp_bot_api::processor::Processor;
+use nlp_bot_api::processor::{container, Processor};
 use serenity::all::{ChannelType, GatewayIntents};
 use serenity::builder::GetMessages;
 use serenity::client::EventHandler;
@@ -38,20 +38,28 @@ impl Bot {
 impl EventHandler for Bot {
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {
         log::info!("Discord cache is ready...");
+        let processor = self.processor.lock().await;
         for guild_id in guilds {
+            processor
+                .add_container(container::Container {
+                    container_id: guild_id.to_string(),
+                    container_parent_id: String::from("discord"),
+                })
+                .await;
+
             let channels = { context.cache.guild(guild_id).unwrap().channels.clone() };
 
-            for (_channel_id, channel) in channels {
+            for (channel_id, channel) in channels {
                 if channel.kind != ChannelType::Text {
                     continue;
                 }
 
-                let guild_name = match channel.guild(&context.cache) {
-                    Some(guild) => guild.name.clone(),
-                    None => String::from("No guild"),
-                };
-
-                println!("Guild: {} | Channel: {}", guild_name, channel.name);
+                processor
+                    .add_container(container::Container {
+                        container_id: channel_id.to_string(),
+                        container_parent_id: guild_id.to_string(),
+                    })
+                    .await;
 
                 let messages = match channel
                     .messages(context.http(), GetMessages::new().limit(100))
@@ -61,9 +69,7 @@ impl EventHandler for Bot {
                     Err(_error) => continue,
                 };
 
-                let processor = self.processor.lock().await;
                 for discord_message in messages {
-                    println!("Message: {}", discord_message.content);
                     processor.add_message(make_message(discord_message)).await;
                 }
             }
