@@ -1,5 +1,6 @@
 use crate::processor::container;
 use crate::processor::message;
+use sqlx::Error;
 use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
 use tokio::sync::Mutex;
 
@@ -46,5 +47,33 @@ impl SqlStore {
         .execute(&mut *self.connection.lock().await)
         .await
         .expect("Failed to add container to database!");
+    }
+
+    pub async fn get_last_known_message_id_in_container(
+        &self,
+        container_id: String,
+    ) -> Result<String, Error> {
+        match sqlx::query!(
+            "SELECT message_id FROM messages WHERE container_id=? ORDER BY unix_timestamp DESC LIMIT 1;",
+            container_id
+        )
+        .fetch_one(&mut *self.connection.lock().await).await {
+            Ok(o) => Ok(o.message_id),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub async fn get_first_known_message_id_in_container(
+        &self,
+        container_id: String,
+    ) -> Result<String, Error> {
+        match sqlx::query!(
+            "SELECT message_id FROM messages WHERE container_id=? ORDER BY unix_timestamp ASC LIMIT 1;",
+            container_id
+        )
+        .fetch_one(&mut *self.connection.lock().await).await {
+            Ok(o) => Ok(o.message_id),
+            Err(e) => Err(e),
+        }
     }
 }
