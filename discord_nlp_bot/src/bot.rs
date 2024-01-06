@@ -43,7 +43,43 @@ impl Bot {
         Self { processor }
     }
 
-    async fn paginate(
+    async fn paginate(&self, context: Context, channel: GuildChannel) {
+        let processor = self.processor.lock().await;
+
+        match processor
+            .get_first_and_last_known_message_id_in_container(channel.id.to_string())
+            .await
+        {
+            Ok((first_message_id, last_message_id)) => {
+                drop(processor);
+                self.paginate_in_direction(
+                    context.clone(),
+                    channel.clone(),
+                    Some(MessageId::new(first_message_id.parse().unwrap())),
+                    PaginationDirection::Up,
+                )
+                .await
+                .expect("Failed to paginate up");
+                self.paginate_in_direction(
+                    context.clone(),
+                    channel,
+                    Some(MessageId::new(last_message_id.parse().unwrap())),
+                    PaginationDirection::Down,
+                )
+                .await
+                .expect("Failed to paginate down");
+            }
+            Err(_e) => {
+                drop(processor);
+
+                self.paginate_in_direction(context.clone(), channel, None, PaginationDirection::Up)
+                    .await
+                    .expect("Failed to paginate up from bottom");
+            }
+        };
+    }
+
+    async fn paginate_in_direction(
         &self,
         context: Context,
         channel: GuildChannel,
@@ -132,38 +168,9 @@ impl EventHandler for Bot {
                         container_parent_id: guild_id.to_string(),
                     })
                     .await;
+                drop(processor);
 
-                match processor
-                    .get_first_and_last_known_message_id_in_container(channel.id.to_string())
-                    .await
-                {
-                    Ok((first_message_id, last_message_id)) => {
-                        drop(processor);
-                        self.paginate(
-                            context.clone(),
-                            channel.clone(),
-                            Some(MessageId::new(first_message_id.parse().unwrap())),
-                            PaginationDirection::Up,
-                        )
-                        .await
-                        .expect("Failed to paginate up");
-                        self.paginate(
-                            context.clone(),
-                            channel,
-                            Some(MessageId::new(last_message_id.parse().unwrap())),
-                            PaginationDirection::Down,
-                        )
-                        .await
-                        .expect("Failed to paginate down");
-                    }
-                    Err(_e) => {
-                        drop(processor);
-
-                        self.paginate(context.clone(), channel, None, PaginationDirection::Up)
-                            .await
-                            .expect("Failed to paginate up from bottom");
-                    }
-                };
+                self.paginate(context.clone(), channel).await;
             }
         }
 
