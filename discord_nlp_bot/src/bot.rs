@@ -1,6 +1,6 @@
 use crate::makers::make_message;
 use nlp_bot_api::processor::{container, Processor};
-use serenity::all::{ChannelType, GatewayIntents, GuildChannel, Message, MessageId};
+use serenity::all::{ChannelType, GatewayIntents, Guild, GuildChannel, Message, MessageId};
 use serenity::builder::GetMessages;
 use serenity::client::EventHandler;
 use serenity::http::CacheHttp;
@@ -138,6 +138,23 @@ impl Bot {
 
         self.paginate(context.clone(), channel).await;
     }
+
+    async fn process_guild(&self, context: Context, guild: Guild) {
+        let processor = self.processor.lock().await;
+        processor
+            .add_container(container::Container {
+                container_id: guild.id.to_string(),
+                container_parent_id: String::from("discord"),
+            })
+            .await;
+        drop(processor);
+
+        for (_channel_id, channel) in guild.channels {
+            if channel.kind == ChannelType::Text {
+                self.process_channel(context.clone(), channel).await;
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -159,21 +176,7 @@ impl EventHandler for Bot {
                     continue;
                 }
             };
-
-            let processor = self.processor.lock().await;
-            processor
-                .add_container(container::Container {
-                    container_id: guild_id.to_string(),
-                    container_parent_id: String::from("discord"),
-                })
-                .await;
-            drop(processor);
-
-            for (_channel_id, channel) in guild.channels {
-                if channel.kind == ChannelType::Text {
-                    self.process_channel(context.clone(), channel).await;
-                }
-            }
+            self.process_guild(context.clone(), guild).await;
         }
 
         log::info!("Read all containers!")
