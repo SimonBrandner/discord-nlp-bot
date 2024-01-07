@@ -15,9 +15,9 @@ const MESSAGE_LIMIT: u8 = 100;
 #[derive(PartialEq, Debug)]
 enum PaginationDirection {
     /// From old messages to new ones
-    Up,
+    Up { message_id: Option<MessageId> },
     /// From new messages to new ones
-    Down,
+    Down { message_id: MessageId },
 }
 
 pub async fn start_bot(bot: Bot, token: String) {
@@ -55,16 +55,18 @@ impl Bot {
                 self.paginate_in_direction(
                     context,
                     channel,
-                    Some(MessageId::new(first_message_id.parse().unwrap())),
-                    PaginationDirection::Up,
+                    PaginationDirection::Up {
+                        message_id: Some(MessageId::new(first_message_id.parse().unwrap())),
+                    },
                 )
                 .await
                 .expect("Failed to paginate up");
                 self.paginate_in_direction(
                     context,
                     channel,
-                    Some(MessageId::new(last_message_id.parse().unwrap())),
-                    PaginationDirection::Down,
+                    PaginationDirection::Down {
+                        message_id: MessageId::new(last_message_id.parse().unwrap()),
+                    },
                 )
                 .await
                 .expect("Failed to paginate down");
@@ -72,9 +74,13 @@ impl Bot {
             Err(_e) => {
                 drop(processor);
 
-                self.paginate_in_direction(context, channel, None, PaginationDirection::Up)
-                    .await
-                    .expect("Failed to paginate up from bottom");
+                self.paginate_in_direction(
+                    context,
+                    channel,
+                    PaginationDirection::Up { message_id: None },
+                )
+                .await
+                .expect("Failed to paginate up from bottom");
             }
         };
     }
@@ -83,7 +89,6 @@ impl Bot {
         &self,
         context: &Context,
         channel: &GuildChannel,
-        message_id: Option<MessageId>,
         direction: PaginationDirection,
     ) -> Result<(), Error> {
         log::info!(
@@ -92,13 +97,13 @@ impl Bot {
             direction
         );
 
-        let mut get_messages = GetMessages::new().limit(MESSAGE_LIMIT);
-        get_messages = match message_id {
-            Some(message_id) => match direction {
-                PaginationDirection::Down => get_messages.after(message_id),
-                PaginationDirection::Up => get_messages.before(message_id),
+        let mut get_messages: GetMessages = GetMessages::new().limit(MESSAGE_LIMIT);
+        get_messages = match direction {
+            PaginationDirection::Down { message_id } => get_messages.after(message_id),
+            PaginationDirection::Up { message_id } => match message_id {
+                Some(message_id) => get_messages.before(message_id),
+                None => get_messages,
             },
-            None => get_messages,
         };
 
         loop {
@@ -118,8 +123,10 @@ impl Bot {
             }
 
             get_messages = match direction {
-                PaginationDirection::Up => get_messages.before(last_message_id),
-                PaginationDirection::Down => get_messages.after(last_message_id),
+                PaginationDirection::Up { message_id: _id } => get_messages.before(last_message_id),
+                PaginationDirection::Down { message_id: _id } => {
+                    get_messages.after(last_message_id)
+                }
             };
         }
 
