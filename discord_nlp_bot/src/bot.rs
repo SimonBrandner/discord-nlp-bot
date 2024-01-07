@@ -125,6 +125,19 @@ impl Bot {
 
         Ok(())
     }
+
+    async fn process_channel(&self, context: Context, channel: GuildChannel) {
+        let processor = self.processor.lock().await;
+        processor
+            .add_container(container::Container {
+                container_id: channel.id.to_string(),
+                container_parent_id: channel.guild_id.to_string(),
+            })
+            .await;
+        drop(processor);
+
+        self.paginate(context.clone(), channel).await;
+    }
 }
 
 #[async_trait]
@@ -156,21 +169,10 @@ impl EventHandler for Bot {
                 .await;
             drop(processor);
 
-            for (channel_id, channel) in guild.channels {
-                if channel.kind != ChannelType::Text {
-                    continue;
+            for (_channel_id, channel) in guild.channels {
+                if channel.kind == ChannelType::Text {
+                    self.process_channel(context.clone(), channel).await;
                 }
-
-                let processor = self.processor.lock().await;
-                processor
-                    .add_container(container::Container {
-                        container_id: channel_id.to_string(),
-                        container_parent_id: guild_id.to_string(),
-                    })
-                    .await;
-                drop(processor);
-
-                self.paginate(context.clone(), channel).await;
             }
         }
 
