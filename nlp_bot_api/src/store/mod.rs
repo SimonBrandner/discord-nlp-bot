@@ -49,7 +49,7 @@ impl SqlStore {
         .expect("Failed to add container to database!");
     }
 
-    pub async fn get_last_known_message_id_in_container(
+    pub async fn get_last_message_id_in_container(
         &self,
         container_id: &str,
     ) -> Result<String, Error> {
@@ -63,7 +63,7 @@ impl SqlStore {
         }
     }
 
-    pub async fn get_first_known_message_id_in_container(
+    pub async fn get_first_message_id_in_container(
         &self,
         container_id: &str,
     ) -> Result<String, Error> {

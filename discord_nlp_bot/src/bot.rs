@@ -45,13 +45,13 @@ impl Bot {
 
     async fn paginate(&self, context: &Context, channel: &GuildChannel) {
         let processor = self.processor.lock().await;
+        let first_and_last_messages_id = processor
+            .get_first_and_last_message_id_in_container(&channel.id.to_string())
+            .await;
+        drop(processor);
 
-        match processor
-            .get_first_and_last_known_message_id_in_container(&channel.id.to_string())
-            .await
-        {
+        match first_and_last_messages_id {
             Ok((first_message_id, last_message_id)) => {
-                drop(processor);
                 self.paginate_in_direction(
                     context,
                     channel,
@@ -61,6 +61,7 @@ impl Bot {
                 )
                 .await
                 .expect("Failed to paginate up");
+
                 self.paginate_in_direction(
                     context,
                     channel,
@@ -72,8 +73,6 @@ impl Bot {
                 .expect("Failed to paginate down");
             }
             Err(_e) => {
-                drop(processor);
-
                 self.paginate_in_direction(
                     context,
                     channel,
