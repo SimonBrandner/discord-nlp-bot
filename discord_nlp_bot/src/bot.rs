@@ -10,7 +10,7 @@ use serenity::{async_trait, Client, Error};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-const MESSAGE_LIMIT: u8 = 5;
+const MESSAGE_LIMIT: u8 = 100;
 
 #[derive(PartialEq, Debug)]
 enum PaginationDirection {
