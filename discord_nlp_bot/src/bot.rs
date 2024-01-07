@@ -166,6 +166,7 @@ impl Bot {
 #[async_trait]
 impl EventHandler for Bot {
     // TODO: Handle updates
+    // TODO: Model relations (replies)
 
     async fn message(&self, _context: Context, new_message: Message) {
         let processor = self.processor.lock().await;
