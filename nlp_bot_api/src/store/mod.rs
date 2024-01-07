@@ -51,7 +51,7 @@ impl SqlStore {
 
     pub async fn get_last_known_message_id_in_container(
         &self,
-        container_id: String,
+        container_id: &str,
     ) -> Result<String, Error> {
         match sqlx::query!(
             "SELECT message_id FROM messages WHERE container_id=? ORDER BY unix_timestamp DESC LIMIT 1;",
@@ -65,7 +65,7 @@ impl SqlStore {
 
     pub async fn get_first_known_message_id_in_container(
         &self,
-        container_id: String,
+        container_id: &str,
     ) -> Result<String, Error> {
         match sqlx::query!(
             "SELECT message_id FROM messages WHERE container_id=? ORDER BY unix_timestamp ASC LIMIT 1;",

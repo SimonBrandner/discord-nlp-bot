@@ -43,25 +43,25 @@ impl Bot {
         Self { processor }
     }
 
-    async fn paginate(&self, context: Context, channel: GuildChannel) {
+    async fn paginate(&self, context: &Context, channel: &GuildChannel) {
         let processor = self.processor.lock().await;
 
         match processor
-            .get_first_and_last_known_message_id_in_container(channel.id.to_string())
+            .get_first_and_last_known_message_id_in_container(&channel.id.to_string())
             .await
         {
             Ok((first_message_id, last_message_id)) => {
                 drop(processor);
                 self.paginate_in_direction(
-                    context.clone(),
-                    channel.clone(),
+                    context,
+                    channel,
                     Some(MessageId::new(first_message_id.parse().unwrap())),
                     PaginationDirection::Up,
                 )
                 .await
                 .expect("Failed to paginate up");
                 self.paginate_in_direction(
-                    context.clone(),
+                    context,
                     channel,
                     Some(MessageId::new(last_message_id.parse().unwrap())),
                     PaginationDirection::Down,
@@ -72,7 +72,7 @@ impl Bot {
             Err(_e) => {
                 drop(processor);
 
-                self.paginate_in_direction(context.clone(), channel, None, PaginationDirection::Up)
+                self.paginate_in_direction(context, channel, None, PaginationDirection::Up)
                     .await
                     .expect("Failed to paginate up from bottom");
             }
@@ -81,8 +81,8 @@ impl Bot {
 
     async fn paginate_in_direction(
         &self,
-        context: Context,
-        channel: GuildChannel,
+        context: &Context,
+        channel: &GuildChannel,
         message_id: Option<MessageId>,
         direction: PaginationDirection,
     ) -> Result<(), Error> {
@@ -126,7 +126,7 @@ impl Bot {
         Ok(())
     }
 
-    async fn process_channel(&self, context: Context, channel: GuildChannel) {
+    async fn process_channel(&self, context: &Context, channel: &GuildChannel) {
         let processor = self.processor.lock().await;
         processor
             .add_container(container::Container {
@@ -136,10 +136,10 @@ impl Bot {
             .await;
         drop(processor);
 
-        self.paginate(context.clone(), channel).await;
+        self.paginate(context, channel).await;
     }
 
-    async fn process_guild(&self, context: Context, guild: Guild) {
+    async fn process_guild(&self, context: &Context, guild: &Guild) {
         let processor = self.processor.lock().await;
         processor
             .add_container(container::Container {
@@ -149,9 +149,9 @@ impl Bot {
             .await;
         drop(processor);
 
-        for (_channel_id, channel) in guild.channels {
+        for (_channel_id, channel) in &guild.channels {
             if channel.kind == ChannelType::Text {
-                self.process_channel(context.clone(), channel).await;
+                self.process_channel(context, &channel).await;
             }
         }
     }
@@ -176,7 +176,7 @@ impl EventHandler for Bot {
                     continue;
                 }
             };
-            self.process_guild(context.clone(), guild).await;
+            self.process_guild(&context, &guild).await;
         }
 
         log::info!("Read all containers!")

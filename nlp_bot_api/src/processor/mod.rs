@@ -24,13 +24,13 @@ impl Processor {
 
     pub async fn get_first_and_last_known_message_id_in_container(
         &self,
-        container_id: String,
+        container_id: &str,
     ) -> Result<(String, String), Error> {
         let first = self
-            .get_first_known_message_id_in_container(container_id.clone())
+            .get_first_known_message_id_in_container(&container_id)
             .await?;
         let last = self
-            .get_last_known_message_id_in_container(container_id.clone())
+            .get_last_known_message_id_in_container(&container_id)
             .await?;
 
         Ok((first, last))
@@ -38,7 +38,7 @@ impl Processor {
 
     async fn get_last_known_message_id_in_container(
         &self,
-        container_id: String,
+        container_id: &str,
     ) -> Result<String, Error> {
         self.store
             .get_last_known_message_id_in_container(container_id)
@@ -47,7 +47,7 @@ impl Processor {
 
     async fn get_first_known_message_id_in_container(
         &self,
-        container_id: String,
+        container_id: &str,
     ) -> Result<String, Error> {
         self.store
             .get_first_known_message_id_in_container(container_id)
