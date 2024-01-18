@@ -13,6 +13,8 @@ cd discord-nlp-bot
 sqlite3 discord_nlp_bot/database.db < nlp_bot_api/src/schemas/database.schema
 echo "DATABASE_URL=sqlite://./discord_nlp_bot/database.db" > .env
 cp discord_nlp_bot/config.sample.json discord_nlp_bot/config.json
+cd discord_nlp_bot
+cargo run
 ```
 
 - Have fun
