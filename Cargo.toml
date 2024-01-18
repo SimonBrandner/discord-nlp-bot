@@ -8,3 +8,4 @@ members = [
 [workspace.package]
 name = "nlp_bots"
 edition = "2021"
+rust-version = "1.56"
