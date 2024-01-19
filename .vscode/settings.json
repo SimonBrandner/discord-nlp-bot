@@ -2,6 +2,7 @@
     "editor.formatOnSave": true,
     "editor.insertSpaces": true,
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "rust-analyzer.checkOnSave.command": "clippy",
     "[sql]": {
         "editor.defaultFormatter": "adpyke.vscode-sql-formatter"
     },

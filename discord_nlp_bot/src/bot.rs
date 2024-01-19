@@ -155,9 +155,9 @@ impl Bot {
             .await;
         drop(processor);
 
-        for (_channel_id, channel) in &guild.channels {
+        for channel in guild.channels.values() {
             if channel.kind == ChannelType::Text {
-                self.process_channel(context, &channel).await;
+                self.process_channel(context, channel).await;
             }
         }
     }

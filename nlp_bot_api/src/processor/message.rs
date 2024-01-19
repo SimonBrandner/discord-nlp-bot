@@ -9,9 +9,9 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn sanitize_content(content: &String) -> String {
+    pub fn sanitize_content(content: &str) -> String {
         // TODO: Sanitize content
-        content.clone()
+        content.to_string()
     }
 
     pub fn re_sanitize(&mut self) {

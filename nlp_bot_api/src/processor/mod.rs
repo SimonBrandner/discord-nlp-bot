@@ -26,10 +26,8 @@ impl Processor {
         &self,
         container_id: &str,
     ) -> Result<(String, String), Error> {
-        let first = self
-            .get_first_message_id_in_container(&container_id)
-            .await?;
-        let last = self.get_last_message_id_in_container(&container_id).await?;
+        let first = self.get_first_message_id_in_container(container_id).await?;
+        let last = self.get_last_message_id_in_container(container_id).await?;
 
         Ok((first, last))
     }
