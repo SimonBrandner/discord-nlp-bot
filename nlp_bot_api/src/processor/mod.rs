@@ -9,6 +9,7 @@ pub struct Processor {
 }
 
 impl Processor {
+    #[allow(clippy::missing_const_for_fn)]
     pub fn new(store: SqlStore) -> Self {
         Self { store }
     }

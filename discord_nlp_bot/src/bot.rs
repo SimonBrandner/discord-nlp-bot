@@ -107,10 +107,9 @@ impl Bot {
         let mut get_messages: GetMessages = GetMessages::new().limit(MESSAGE_LIMIT);
         get_messages = match direction {
             PaginationDirection::Down { message_id } => get_messages.after(message_id),
-            PaginationDirection::Up { message_id } => match message_id {
-                Some(message_id) => get_messages.before(message_id),
-                None => get_messages,
-            },
+            PaginationDirection::Up { message_id } => {
+                message_id.map_or(get_messages, |message_id| get_messages.before(message_id))
+            }
         };
 
         loop {
@@ -128,6 +127,7 @@ impl Bot {
             for discord_message in messages {
                 processor.add_message(make_message(&discord_message)).await;
             }
+            drop(processor);
 
             get_messages = match direction {
                 PaginationDirection::Up { message_id: _id } => get_messages.before(last_message_id),
@@ -179,6 +179,7 @@ impl EventHandler for Bot {
     async fn message(&self, _context: Context, new_message: Message) {
         let processor = self.processor.lock().await;
         processor.add_message(make_message(&new_message)).await;
+        drop(processor);
     }
 
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {

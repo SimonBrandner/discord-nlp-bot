@@ -15,6 +15,6 @@ impl Message {
     }
 
     pub fn re_sanitize(&mut self) {
-        self.sanitized_content = Message::sanitize_content(&self.content);
+        self.sanitized_content = Self::sanitize_content(&self.content);
     }
 }
