@@ -56,7 +56,11 @@ impl Bot {
                     context,
                     channel,
                     PaginationDirection::Up {
-                        message_id: Some(MessageId::new(first_message_id.parse().unwrap())),
+                        message_id: Some(MessageId::new(
+                            first_message_id
+                                .parse()
+                                .expect("The database contains a message ID that is not a number!"),
+                        )),
                     },
                 )
                 .await
@@ -66,7 +70,11 @@ impl Bot {
                     context,
                     channel,
                     PaginationDirection::Down {
-                        message_id: MessageId::new(last_message_id.parse().unwrap()),
+                        message_id: MessageId::new(
+                            last_message_id
+                                .parse()
+                                .expect("The database contains a message ID that is not a number!"),
+                        ),
                     },
                 )
                 .await
