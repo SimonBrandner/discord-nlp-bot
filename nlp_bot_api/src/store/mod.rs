@@ -13,7 +13,7 @@ impl SqlStore {
         if !Sqlite::database_exists(&file_path).await.unwrap_or(false) {
             log::info!("Database does not exist - creating...");
             match Sqlite::create_database(&file_path).await {
-                Ok(_) => log::info!("Database created successfully!"),
+                Ok(()) => log::info!("Database created successfully!"),
                 Err(e) => return Err(e),
             }
         }
