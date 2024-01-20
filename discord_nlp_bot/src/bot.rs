@@ -126,7 +126,7 @@ impl Bot {
 
             let processor = self.processor.lock().await;
             for discord_message in messages {
-                processor.add_message(make_message(discord_message)).await;
+                processor.add_message(make_message(&discord_message)).await;
             }
 
             get_messages = match direction {
@@ -178,22 +178,22 @@ impl EventHandler for Bot {
 
     async fn message(&self, _context: Context, new_message: Message) {
         let processor = self.processor.lock().await;
-        processor.add_message(make_message(new_message)).await;
+        processor.add_message(make_message(&new_message)).await;
     }
 
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {
         log::info!("Discord cache is ready...");
         for guild_id in guilds {
-            let guild = match context.cache.guild(guild_id) {
-                Some(guild) => guild.clone(),
-                None => {
-                    log::warn!("Failed to get guild: {}", guild_id);
-                    continue;
-                }
-            };
+            let guild;
+            if let Some(g) = context.cache.guild(guild_id) {
+                guild = g.clone();
+            } else {
+                log::warn!("Failed to get guild: {}", guild_id);
+                continue;
+            }
             self.process_guild(&context, &guild).await;
         }
 
-        log::info!("Read all containers!")
+        log::info!("Read all containers!");
     }
 }

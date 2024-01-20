@@ -1,6 +1,6 @@
 use nlp_bot_api::processor;
 
-pub fn make_message(discord_message: serenity::all::Message) -> processor::message::Message {
+pub fn make_message(discord_message: &serenity::all::Message) -> processor::message::Message {
     processor::message::Message {
         content: discord_message.content.clone(),
         sanitized_content: processor::message::Message::sanitize_content(&discord_message.content),

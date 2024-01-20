@@ -6,7 +6,7 @@ pub struct Configuration {
     pub sql_database_path: String,
 }
 
-pub fn read_configuration_from_file(path: String) -> Configuration {
+pub fn read_configuration_from_file(path: &String) -> Configuration {
     let json_str = read_file_as_string(path);
     serde_json::from_str(&json_str).expect("Failed to parse JSON")
 }

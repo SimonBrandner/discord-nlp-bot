@@ -23,7 +23,7 @@ async fn main() {
     env_logger::init();
 
     let command_line_arguments = CommandLineArguments::parse();
-    let configuration = read_configuration_from_file(command_line_arguments.configuration_file);
+    let configuration = read_configuration_from_file(&command_line_arguments.configuration_file);
 
     let store = match SqlStore::new(configuration.sql_database_path).await {
         Ok(store) => store,
