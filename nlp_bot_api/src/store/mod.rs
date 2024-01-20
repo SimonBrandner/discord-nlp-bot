@@ -4,11 +4,11 @@ use sqlx::Error;
 use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
 use tokio::sync::Mutex;
 
-pub struct SqlStore {
+pub struct Sql {
     connection: Mutex<SqliteConnection>,
 }
 
-impl SqlStore {
+impl Sql {
     pub async fn new(file_path: String) -> Result<Self, sqlx::Error> {
         if !Sqlite::database_exists(&file_path).await.unwrap_or(false) {
             log::info!("Database does not exist - creating...");

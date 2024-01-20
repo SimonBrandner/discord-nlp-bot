@@ -20,7 +20,7 @@ enum PaginationDirection {
     Down { message_id: MessageId },
 }
 
-pub async fn start_bot(bot: Bot, token: String) {
+pub async fn start(bot: Bot, token: String) {
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
 
     let mut client = Client::builder(token, intents)

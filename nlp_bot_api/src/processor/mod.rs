@@ -1,16 +1,16 @@
 pub mod container;
 pub mod message;
 
-use crate::store::SqlStore;
+use crate::store;
 use sqlx::Error;
 
 pub struct Processor {
-    store: SqlStore,
+    store: store::Sql,
 }
 
 impl Processor {
     #[allow(clippy::missing_const_for_fn)]
-    pub fn new(store: SqlStore) -> Self {
+    pub fn new(store: store::Sql) -> Self {
         Self { store }
     }
 
