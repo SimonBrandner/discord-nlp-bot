@@ -28,10 +28,9 @@ impl Sql {
 
     pub async fn add_message(&self, message: message::Message) {
         sqlx::query!(
-            "INSERT INTO messages (message_id, content, sanitized_content, sender_id, container_id, unix_timestamp) VALUES (?, ?, ?, ?, ?, ?);",
+            "INSERT INTO messages (message_id, content, sender_id, container_id, unix_timestamp) VALUES (?, ?, ?, ?, ?);",
             message.message_id,
             message.content,
-            message.sanitized_content,
             message.sender_id,
             message.container_id,
             message.unix_timestamp,

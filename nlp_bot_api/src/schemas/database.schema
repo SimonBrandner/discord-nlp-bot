@@ -3,8 +3,7 @@ CREATE TABLE messages (
     container_id TEXT NOT NULL,
     sender_id TEXT NOT NULL,
     unix_timestamp INT NOT NULL,
-    content TEXT NOT NULL,
-    sanitized_content TEXT NOT NULL
+    content TEXT NOT NULL
 );
 
 CREATE TABLE containers (
