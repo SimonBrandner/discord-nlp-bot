@@ -1,5 +1,7 @@
 use crate::processor::container;
 use crate::processor::message;
+use sqlx::migrate;
+use sqlx::migrate::MigrateError;
 use sqlx::Error;
 use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
 use tokio::sync::Mutex;
@@ -18,12 +20,27 @@ impl Sql {
             }
         }
 
-        match SqliteConnection::connect(format!("sqlite://{}", file_path).as_str()).await {
-            Ok(c) => Ok(Self {
-                connection: Mutex::new(c),
-            }),
-            Err(e) => Err(e),
+        let database_connection =
+            match SqliteConnection::connect(format!("sqlite://{}", file_path).as_str()).await {
+                Ok(c) => c,
+                Err(e) => return Err(e),
+            };
+
+        let sql = Self {
+            connection: Mutex::new(database_connection),
+        };
+
+        if let Err(e) = sql.migrate().await {
+            return Err(e.into());
         }
+
+        Ok(sql)
+    }
+
+    async fn migrate(&self) -> Result<(), MigrateError> {
+        migrate!("./src/migrations")
+            .run(&mut *self.connection.lock().await)
+            .await
     }
 
     pub async fn add_message(&self, message: message::Message) {
