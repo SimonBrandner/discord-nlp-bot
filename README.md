@@ -2,7 +2,9 @@
 
 A Discord Bot to perform Natural Language Processing (NLP).
 
-## Development setup
+## Development
+
+### Setup
 
 - Install Git, Rust, SQLite, SQLX CLI
 - Run the following:
@@ -21,4 +23,7 @@ cd discord_nlp_bot
 cargo run
 ```
 
-- Have fun
+### Updating database
+
+- Add a new migration to `nlp_bot_api/src/migrations`
+- Run `cargo sqlx prepare --workspace`
