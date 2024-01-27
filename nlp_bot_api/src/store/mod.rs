@@ -45,7 +45,7 @@ impl Sql {
 
     pub async fn add_message(&self, message: message::Message) {
         sqlx::query!(
-            "INSERT INTO messages (message_id, content, sender_id, container_id, unix_timestamp) VALUES (?, ?, ?, ?, ?);",
+            "INSERT INTO entries (message_id, content, sender_id, container_id, unix_timestamp) VALUES (?, ?, ?, ?, ?);",
             message.message_id,
             message.content,
             message.sender_id,
@@ -70,7 +70,7 @@ impl Sql {
         container_id: &str,
     ) -> Result<String, Error> {
         match sqlx::query!(
-            "SELECT message_id FROM messages WHERE container_id=? ORDER BY unix_timestamp DESC LIMIT 1;",
+            "SELECT message_id FROM entries WHERE container_id=? ORDER BY unix_timestamp DESC LIMIT 1;",
             container_id
         )
         .fetch_one(&mut *self.connection.lock().await).await {
@@ -84,7 +84,7 @@ impl Sql {
         container_id: &str,
     ) -> Result<String, Error> {
         match sqlx::query!(
-            "SELECT message_id FROM messages WHERE container_id=? ORDER BY unix_timestamp ASC LIMIT 1;",
+            "SELECT message_id FROM entries WHERE container_id=? ORDER BY unix_timestamp ASC LIMIT 1;",
             container_id
         )
         .fetch_one(&mut *self.connection.lock().await).await {

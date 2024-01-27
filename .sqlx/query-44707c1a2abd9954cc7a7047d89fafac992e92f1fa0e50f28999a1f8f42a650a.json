@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT message_id FROM messages WHERE container_id=? ORDER BY unix_timestamp ASC LIMIT 1;",
+  "query": "SELECT message_id FROM entries WHERE container_id=? ORDER BY unix_timestamp DESC LIMIT 1;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "272fe9545de925ce97744422ea0508f5f399093729a2b7dd834297acb350ff6d"
+  "hash": "44707c1a2abd9954cc7a7047d89fafac992e92f1fa0e50f28999a1f8f42a650a"
 }
