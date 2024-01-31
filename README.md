@@ -23,7 +23,13 @@ cd discord_nlp_bot
 cargo run
 ```
 
-### Updating database
+### Database
 
-- Add a new migration to `nlp_bot_api/src/migrations`
+#### Updating
+
+- Add a new migration using `sqlx migrate add <name> --source nlp_bot_api/src/migrations`
+- Run the migration using `cargo sqlx migrate run --source nlp_bot_api/src/migrations`
+
+#### Writing queries
+
 - Run `cargo sqlx prepare --workspace`
