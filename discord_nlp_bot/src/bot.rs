@@ -8,7 +8,6 @@ use serenity::model::id::GuildId;
 use serenity::prelude::Context;
 use serenity::{async_trait, Client, Error};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 const MESSAGE_LIMIT: u8 = 100;
 
@@ -35,20 +34,19 @@ pub async fn start(bot: Bot, token: String) {
 }
 
 pub struct Bot {
-    processor: Arc<Mutex<Processor>>,
+    processor: Arc<Processor>,
 }
 
 impl Bot {
-    pub fn new(processor: Arc<Mutex<Processor>>) -> Self {
+    pub fn new(processor: Arc<Processor>) -> Self {
         Self { processor }
     }
 
     async fn paginate(&self, context: &Context, channel: &GuildChannel) {
-        let processor = self.processor.lock().await;
-        let first_and_last_messages_id = processor
+        let first_and_last_messages_id = self
+            .processor
             .get_first_and_last_message_id_in_container(&channel.id.to_string())
             .await;
-        drop(processor);
 
         match first_and_last_messages_id {
             Ok((first_message_id, last_message_id)) => {
@@ -123,11 +121,11 @@ impl Bot {
                 None => break,
             };
 
-            let processor = self.processor.lock().await;
             for discord_message in messages {
-                processor.add_message(make_message(&discord_message)).await;
+                self.processor
+                    .add_message(make_message(&discord_message))
+                    .await;
             }
-            drop(processor);
 
             get_messages = match direction {
                 PaginationDirection::Up { message_id: _id } => get_messages.before(last_message_id),
@@ -141,27 +139,23 @@ impl Bot {
     }
 
     async fn process_channel(&self, context: &Context, channel: &GuildChannel) {
-        let processor = self.processor.lock().await;
-        processor
+        self.processor
             .add_container(container::Container {
                 container_id: channel.id.to_string(),
                 container_parent_id: channel.guild_id.to_string(),
             })
             .await;
-        drop(processor);
 
         self.paginate(context, channel).await;
     }
 
     async fn process_guild(&self, context: &Context, guild: &Guild) {
-        let processor = self.processor.lock().await;
-        processor
+        self.processor
             .add_container(container::Container {
                 container_id: guild.id.to_string(),
                 container_parent_id: String::from("discord"),
             })
             .await;
-        drop(processor);
 
         for channel in guild.channels.values() {
             if channel.kind == ChannelType::Text {
@@ -177,9 +171,7 @@ impl EventHandler for Bot {
     // TODO: Model relations (replies)
 
     async fn message(&self, _context: Context, new_message: Message) {
-        let processor = self.processor.lock().await;
-        processor.add_message(make_message(&new_message)).await;
-        drop(processor);
+        self.processor.add_message(make_message(&new_message)).await;
     }
 
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {
