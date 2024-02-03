@@ -64,18 +64,20 @@ impl Sql {
 
         for ngrams_chunk in ngrams.chunks(CHUNK_SIZE) {
             let mut query_builder = QueryBuilder::new(
-                "INSERT INTO ngrams (count, content, time, sender_id, container_id) ",
+                "INSERT INTO ngrams (count, content, length, time, sender_id, container_id) ",
             );
+
             query_builder.push_values(ngrams_chunk, |mut query_builder, ngram| {
                 query_builder
                     .push_bind(1)
                     .push_bind(ngram.content.clone())
+                    .push_bind(ngram.length)
                     .push_bind(ngram.time)
                     .push_bind(ngram.sender_id.clone())
                     .push_bind(ngram.container_id.clone());
             });
             query_builder.push(
-                " ON CONFLICT (content, time, sender_id, container_id) DO UPDATE SET count = count + 1;",
+                " ON CONFLICT (content, length, time, sender_id, container_id) DO UPDATE SET count = count + 1;",
             );
             query_builder
                 .build()

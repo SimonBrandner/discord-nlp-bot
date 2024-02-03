@@ -22,8 +22,10 @@ impl Entry {
 
         get_ngrams_in_word_list(words.as_slice(), MAX_NGRAM_LENGTH)
             .iter()
-            .map(|text| Ngram {
-                content: text.clone(),
+            .map(|words| Ngram {
+                content: words.join(" "),
+                #[allow(clippy::cast_possible_truncation)]
+                length: words.len() as u32,
                 time: get_ngram_time(self.unix_timestamp),
                 container_id: self.container_id.clone(),
                 sender_id: self.sender_id.clone(),

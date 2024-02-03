@@ -13,16 +13,16 @@ lazy_static! {
         Regex::new(ALLOWED_NGRAM_CHARACTERS).expect("Failed to create regex!");
 }
 
-fn get_ngram(words: &[String], ngram_length: u8, start_index: usize) -> Option<String> {
+fn get_ngram(words: &[String], ngram_length: u8, start_index: usize) -> Option<&[String]> {
     if start_index + ngram_length as usize > words.len() {
         return None;
     }
 
-    Some(words[start_index..(start_index + ngram_length as usize)].join(" "))
+    Some(&words[start_index..(start_index + ngram_length as usize)])
 }
 
-pub fn get_ngrams_in_word_list(words: &[String], max_ngram_length: u8) -> Vec<String> {
-    let mut ngrams: Vec<String> = Vec::new();
+pub fn get_ngrams_in_word_list(words: &[String], max_ngram_length: u8) -> Vec<&[String]> {
+    let mut ngrams: Vec<&[String]> = Vec::new();
 
     for index in 1..=words.len() {
         for ngram_length in 1..=max_ngram_length {
@@ -44,6 +44,7 @@ pub const fn get_ngram_time(time: i64) -> i64 {
 
 pub struct Ngram {
     pub content: String,
+    pub length: u32,
     pub time: i64,
     pub container_id: String,
     pub sender_id: String,
