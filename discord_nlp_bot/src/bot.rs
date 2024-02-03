@@ -10,7 +10,6 @@ use serenity::prelude::Context;
 use serenity::{async_trait, Client, Error};
 use std::sync::Arc;
 
-// TODO: We can increase this when we have have implemented batching in the store
 const MESSAGE_LIMIT: u8 = 100;
 
 #[derive(PartialEq, Debug)]

@@ -4,7 +4,7 @@ pub mod ngram;
 
 use crate::store;
 
-const ENTRY_LIMIT: u32 = 100;
+const ENTRY_LIMIT: u32 = 1000;
 
 #[derive(Debug)]
 pub enum Error {

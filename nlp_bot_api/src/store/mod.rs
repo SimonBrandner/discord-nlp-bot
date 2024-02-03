@@ -10,6 +10,9 @@ use sqlx::QueryBuilder;
 use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
 use tokio::sync::Mutex;
 
+/// Limit as per <https://stackoverflow.com/a/15860818/10822785>
+const CHUNK_SIZE: usize = 500;
+
 pub struct Sql {
     connection: Mutex<SqliteConnection>,
 }
@@ -40,7 +43,6 @@ impl Sql {
             .await
     }
 
-    // TODO: Batch this
     pub async fn mark_entry_as_ngrams_cached(
         &self,
         entry_ids: &[String],
@@ -55,56 +57,64 @@ impl Sql {
         .await
     }
 
-    pub async fn add_ngrams(&self, ngrams: &[Ngram]) -> Result<SqliteQueryResult, Error> {
+    pub async fn add_ngrams(&self, ngrams: &[Ngram]) -> Result<(), Error> {
         if ngrams.is_empty() {
-            return Ok(SqliteQueryResult::default());
+            return Ok(());
         }
 
-        let mut query_builder = QueryBuilder::new(
-            "INSERT INTO ngrams (count, content, time, sender_id, container_id) ",
-        );
-        query_builder.push_values(ngrams, |mut query_builder, ngram| {
+        for ngrams_chunk in ngrams.chunks(CHUNK_SIZE) {
+            let mut query_builder = QueryBuilder::new(
+                "INSERT INTO ngrams (count, content, time, sender_id, container_id) ",
+            );
+            query_builder.push_values(ngrams_chunk, |mut query_builder, ngram| {
+                query_builder
+                    .push_bind(1)
+                    .push_bind(ngram.content.clone())
+                    .push_bind(ngram.time)
+                    .push_bind(ngram.sender_id.clone())
+                    .push_bind(ngram.container_id.clone());
+            });
+            query_builder.push(
+                " ON CONFLICT (content, time, sender_id, container_id) DO UPDATE SET count = count + 1;",
+            );
             query_builder
-                .push_bind(1)
-                .push_bind(ngram.content.clone())
-                .push_bind(ngram.time)
-                .push_bind(ngram.sender_id.clone())
-                .push_bind(ngram.container_id.clone());
-        });
-        query_builder.push(
-            " ON CONFLICT (content, time, sender_id, container_id) DO UPDATE SET count = count + 1;",
-        );
-        query_builder
-            .build()
-            .execute(&mut *self.connection.lock().await)
-            .await
+                .build()
+                .execute(&mut *self.connection.lock().await)
+                .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn add_entries(
         &self,
         entries: &[entry::Entry],
         ngrams_cached: bool,
-    ) -> Result<SqliteQueryResult, Error> {
+    ) -> Result<(), Error> {
         if entries.is_empty() {
-            return Ok(SqliteQueryResult::default());
+            return Ok(());
         }
 
-        let mut query_builder = QueryBuilder::new(
-            "INSERT INTO entries (entry_id, content, sender_id, container_id, unix_timestamp, ngrams_cached) ",
-        );
-        query_builder.push_values(entries, |mut query_builder, entry| {
+        for entries_chunk in entries.chunks(CHUNK_SIZE) {
+            let mut query_builder = QueryBuilder::new(
+                "INSERT INTO entries (entry_id, content, sender_id, container_id, unix_timestamp, ngrams_cached) ",
+            );
+            query_builder.push_values(entries_chunk, |mut query_builder, entry| {
+                query_builder
+                    .push_bind(entry.entry_id.clone())
+                    .push_bind(entry.content.clone())
+                    .push_bind(entry.sender_id.clone())
+                    .push_bind(entry.container_id.clone())
+                    .push_bind(entry.unix_timestamp)
+                    .push_bind(ngrams_cached);
+            });
             query_builder
-                .push_bind(entry.entry_id.clone())
-                .push_bind(entry.content.clone())
-                .push_bind(entry.sender_id.clone())
-                .push_bind(entry.container_id.clone())
-                .push_bind(entry.unix_timestamp)
-                .push_bind(ngrams_cached);
-        });
-        query_builder
-            .build()
-            .execute(&mut *self.connection.lock().await)
-            .await
+                .build()
+                .execute(&mut *self.connection.lock().await)
+                .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn add_container(
