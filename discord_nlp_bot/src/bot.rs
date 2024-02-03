@@ -1,7 +1,7 @@
-use crate::makers::make_message;
-use nlp_bot_api::processor::message;
+use crate::makers::make_entry;
+use nlp_bot_api::processor::entry::Entry;
 use nlp_bot_api::processor::{container, Processor};
-use serenity::all::{ChannelType, GatewayIntents, Guild, GuildChannel, MessageId};
+use serenity::all::{ChannelType, GatewayIntents, Guild, GuildChannel, Message, MessageId};
 use serenity::builder::GetMessages;
 use serenity::client::EventHandler;
 use serenity::http::CacheHttp;
@@ -47,7 +47,7 @@ impl Bot {
     async fn paginate(&self, context: &Context, channel: &GuildChannel) {
         let first_and_last_messages_id = self
             .processor
-            .get_first_and_last_message_id_in_container(&channel.id.to_string())
+            .get_first_and_last_entry_id_in_container(&channel.id.to_string())
             .await;
 
         match first_and_last_messages_id {
@@ -124,8 +124,8 @@ impl Bot {
                 None => break,
             };
 
-            let entries: Vec<message::Message> = messages.iter().map(make_message).collect();
-            self.processor.add_messages(entries.as_slice()).await;
+            let entries: Vec<Entry> = messages.iter().map(make_entry).collect();
+            self.processor.add_entries(entries.as_slice()).await;
 
             get_messages = match direction {
                 PaginationDirection::Up { message_id: _id } => get_messages.before(last_message_id),
@@ -170,8 +170,8 @@ impl EventHandler for Bot {
     // TODO: Handle updates
     // TODO: Model relations (replies)
 
-    async fn message(&self, _context: Context, new_message: serenity::all::Message) {
-        self.processor.add_message(make_message(&new_message)).await;
+    async fn message(&self, _context: Context, new_message: Message) {
+        self.processor.add_entry(make_entry(&new_message)).await;
     }
 
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {

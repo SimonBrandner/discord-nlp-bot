@@ -4,15 +4,15 @@ use super::ngram::{
 };
 
 #[derive(Debug)]
-pub struct Message {
-    pub message_id: String,
+pub struct Entry {
+    pub entry_id: String,
     pub container_id: String,
     pub sender_id: String,
     pub unix_timestamp: i64,
     pub content: String,
 }
 
-impl Message {
+impl Entry {
     pub fn get_ngrams(&self) -> Vec<Ngram> {
         let lower_case_content = self.content.to_lowercase();
         let words: Vec<String> = ALLOWED_NGRAM_CHARACTERS_REGEX
@@ -31,10 +31,10 @@ impl Message {
             .collect()
     }
 
-    pub fn get_ngrams_from_message_slice(messages: &[Self]) -> Vec<Ngram> {
+    pub fn get_ngrams_from_entries_slice(entries: &[Self]) -> Vec<Ngram> {
         let mut ngrams = Vec::new();
-        for message in messages {
-            ngrams.extend(message.get_ngrams());
+        for entry in entries {
+            ngrams.extend(entry.get_ngrams());
         }
         ngrams
     }

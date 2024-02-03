@@ -1,6 +1,6 @@
 use crate::processor::container;
-use crate::processor::message;
-use crate::processor::message::Message;
+use crate::processor::entry;
+use crate::processor::entry::Entry;
 use crate::processor::ngram::Ngram;
 use sqlx::migrate;
 use sqlx::migrate::MigrateError;
@@ -47,16 +47,16 @@ impl Sql {
     }
 
     // TODO: Batch this
-    pub async fn mark_message_ngrams_cached(&self, message_ids: &[String]) {
-        let message_ids_string = message_ids.join(",");
+    pub async fn mark_entry_as_ngrams_cached(&self, entry_ids: &[String]) {
+        let entry_ids_string = entry_ids.join(",");
 
         sqlx::query!(
-            "UPDATE entries SET ngrams_cached=true WHERE message_id IN (?);",
-            message_ids_string
+            "UPDATE entries SET ngrams_cached=true WHERE entry_id IN (?);",
+            entry_ids_string
         )
         .execute(&mut *self.connection.lock().await)
         .await
-        .expect("Failed to mark message ngrams as cached!");
+        .expect("Failed to mark entries ngrams as cached!");
     }
 
     pub async fn add_ngrams(&self, ngrams: &[Ngram]) {
@@ -85,28 +85,28 @@ impl Sql {
             .expect("Failed to add ngrams to database!");
     }
 
-    pub async fn add_messages(&self, messages: &[message::Message], ngrams_cached: bool) {
-        if messages.is_empty() {
+    pub async fn add_entry(&self, entries: &[entry::Entry], ngrams_cached: bool) {
+        if entries.is_empty() {
             return;
         }
 
         let mut query_builder = QueryBuilder::new(
-            "INSERT INTO entries (message_id, content, sender_id, container_id, unix_timestamp, ngrams_cached) ",
+            "INSERT INTO entries (entry_id, content, sender_id, container_id, unix_timestamp, ngrams_cached) ",
         );
-        query_builder.push_values(messages, |mut query_builder, message| {
+        query_builder.push_values(entries, |mut query_builder, entry| {
             query_builder
-                .push_bind(message.message_id.clone())
-                .push_bind(message.content.clone())
-                .push_bind(message.sender_id.clone())
-                .push_bind(message.container_id.clone())
-                .push_bind(message.unix_timestamp)
+                .push_bind(entry.entry_id.clone())
+                .push_bind(entry.content.clone())
+                .push_bind(entry.sender_id.clone())
+                .push_bind(entry.container_id.clone())
+                .push_bind(entry.unix_timestamp)
                 .push_bind(ngrams_cached);
         });
         query_builder
             .build()
             .execute(&mut *self.connection.lock().await)
             .await
-            .expect("Failed to add messages to database!");
+            .expect("Failed to add entries to database!");
     }
 
     pub async fn add_container(&self, container: &container::Container) {
@@ -120,45 +120,45 @@ impl Sql {
         .expect("Failed to add container to database!");
     }
 
-    pub async fn get_last_message_id_in_container(
+    pub async fn get_last_entry_id_in_container(
         &self,
         container_id: &str,
     ) -> Result<String, Error> {
         match sqlx::query!(
-            "SELECT message_id FROM entries WHERE container_id=? ORDER BY unix_timestamp DESC LIMIT 1;",
+            "SELECT entry_id FROM entries WHERE container_id=? ORDER BY unix_timestamp DESC LIMIT 1;",
             container_id
         )
         .fetch_one(&mut *self.connection.lock().await).await {
-            Ok(o) => Ok(o.message_id),
+            Ok(o) => Ok(o.entry_id),
             Err(e) => Err(e),
         }
     }
 
-    pub async fn get_first_message_id_in_container(
+    pub async fn get_first_entry_id_in_container(
         &self,
         container_id: &str,
     ) -> Result<String, Error> {
         match sqlx::query!(
-            "SELECT message_id FROM entries WHERE container_id=? ORDER BY unix_timestamp ASC LIMIT 1;",
+            "SELECT entry_id FROM entries WHERE container_id=? ORDER BY unix_timestamp ASC LIMIT 1;",
             container_id
         )
         .fetch_one(&mut *self.connection.lock().await).await {
-            Ok(o) => Ok(o.message_id),
+            Ok(o) => Ok(o.entry_id),
             Err(e) => Err(e),
         }
     }
 
-    pub async fn get_messages_without_cached_ngrams(
+    pub async fn get_entries_without_cached_ngrams(
         &self,
         limit: u32,
         start_id: Option<String>,
-    ) -> Result<Vec<Message>, Error> {
+    ) -> Result<Vec<Entry>, Error> {
         match start_id {
             Some(start_id) => {
                 sqlx::query!(
                     "
                     SELECT * FROM entries WHERE ngrams_cached=false AND unix_timestamp < (
-                        SELECT unix_timestamp FROM entries WHERE message_id=?
+                        SELECT unix_timestamp FROM entries WHERE entry_id=?
                     ) ORDER BY unix_timestamp DESC LIMIT ?;
                     ",
                     start_id,
@@ -168,8 +168,8 @@ impl Sql {
                 .await
                 .map(|rows| {
                     rows.into_iter()
-                        .map(|row| Message {
-                            message_id: row.message_id,
+                        .map(|row| Entry {
+                            entry_id: row.entry_id,
                             container_id: row.container_id,
                             sender_id: row.sender_id,
                             unix_timestamp: row.unix_timestamp,
@@ -187,8 +187,8 @@ impl Sql {
                 .await
                 .map(|rows| {
                     rows.into_iter()
-                        .map(|row| Message {
-                            message_id: row.message_id,
+                        .map(|row| Entry {
+                            entry_id: row.entry_id,
                             container_id: row.container_id,
                             sender_id: row.sender_id,
                             unix_timestamp: row.unix_timestamp,

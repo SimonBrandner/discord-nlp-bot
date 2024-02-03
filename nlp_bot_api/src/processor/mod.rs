@@ -1,11 +1,11 @@
 pub mod container;
-pub mod message;
+pub mod entry;
 pub mod ngram;
 
 use crate::store;
 use sqlx::Error;
 
-const MESSAGE_LIMIT: u32 = 100;
+const ENTRY_LIMIT: u32 = 100;
 
 pub struct Processor {
     store: store::Sql,
@@ -20,67 +20,67 @@ impl Processor {
     pub async fn cache_ngrams(&self) -> Result<(), Error> {
         let mut start_index: Option<String> = None;
         loop {
-            let messages = match self
+            let entries = match self
                 .store
-                .get_messages_without_cached_ngrams(MESSAGE_LIMIT, start_index)
+                .get_entries_without_cached_ngrams(ENTRY_LIMIT, start_index)
                 .await
             {
-                Ok(messages) => messages,
+                Ok(entries) => entries,
                 Err(e) => {
                     return Err(e);
                 }
             };
 
-            start_index = match messages.last() {
-                Some(message) => Some(message.message_id.clone()),
+            start_index = match entries.last() {
+                Some(entry) => Some(entry.entry_id.clone()),
                 None => break,
             };
 
-            let message_ids: Vec<String> = messages.iter().map(|m| m.message_id.clone()).collect();
-            let ngrams = message::Message::get_ngrams_from_message_slice(messages.as_slice());
+            let entry_ids: Vec<String> = entries.iter().map(|m| m.entry_id.clone()).collect();
+            let ngrams = entry::Entry::get_ngrams_from_entries_slice(entries.as_slice());
 
             self.store.add_ngrams(ngrams.as_slice()).await;
-            self.store.mark_message_ngrams_cached(&message_ids).await;
+            self.store.mark_entry_as_ngrams_cached(&entry_ids).await;
         }
 
-        log::info!("Cached ngrams for all messages");
+        log::info!("Cached ngrams for all entries.");
         Ok(())
     }
 
-    pub async fn add_message(&self, message: message::Message) {
-        self.add_messages([message].as_slice()).await;
+    pub async fn add_entry(&self, entry: entry::Entry) {
+        self.add_entries([entry].as_slice()).await;
     }
 
-    pub async fn add_messages(&self, messages: &[message::Message]) {
-        let ngrams = message::Message::get_ngrams_from_message_slice(messages);
+    pub async fn add_entries(&self, entries: &[entry::Entry]) {
+        let ngrams = entry::Entry::get_ngrams_from_entries_slice(entries);
 
         self.store.add_ngrams(ngrams.as_slice()).await;
-        self.store.add_messages(messages, true).await;
+        self.store.add_entry(entries, true).await;
     }
 
     pub async fn add_container(&self, container: &container::Container) {
         self.store.add_container(container).await;
     }
 
-    pub async fn get_first_and_last_message_id_in_container(
+    pub async fn get_first_and_last_entry_id_in_container(
         &self,
         container_id: &str,
     ) -> Result<(String, String), Error> {
-        let first = self.get_first_message_id_in_container(container_id).await?;
-        let last = self.get_last_message_id_in_container(container_id).await?;
+        let first = self.get_first_entry_id_in_container(container_id).await?;
+        let last = self.get_last_entry_id_in_container(container_id).await?;
 
         Ok((first, last))
     }
 
-    async fn get_last_message_id_in_container(&self, container_id: &str) -> Result<String, Error> {
+    async fn get_last_entry_id_in_container(&self, container_id: &str) -> Result<String, Error> {
         self.store
-            .get_last_message_id_in_container(container_id)
+            .get_last_entry_id_in_container(container_id)
             .await
     }
 
-    async fn get_first_message_id_in_container(&self, container_id: &str) -> Result<String, Error> {
+    async fn get_first_entry_id_in_container(&self, container_id: &str) -> Result<String, Error> {
         self.store
-            .get_first_message_id_in_container(container_id)
+            .get_first_entry_id_in_container(container_id)
             .await
     }
 
