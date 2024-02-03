@@ -58,7 +58,7 @@ impl Processor {
         self.store.add_messages(messages, true).await;
     }
 
-    pub async fn add_container(&self, container: container::Container) {
+    pub async fn add_container(&self, container: &container::Container) {
         self.store.add_container(container).await;
     }
 

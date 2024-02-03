@@ -140,7 +140,7 @@ impl Bot {
 
     async fn process_channel(&self, context: &Context, channel: &GuildChannel) {
         self.processor
-            .add_container(container::Container {
+            .add_container(&container::Container {
                 container_id: channel.id.to_string(),
                 container_parent_id: channel.guild_id.to_string(),
             })
@@ -151,7 +151,7 @@ impl Bot {
 
     async fn process_guild(&self, context: &Context, guild: &Guild) {
         self.processor
-            .add_container(container::Container {
+            .add_container(&container::Container {
                 container_id: guild.id.to_string(),
                 container_parent_id: String::from("discord"),
             })

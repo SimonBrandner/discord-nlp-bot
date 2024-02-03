@@ -24,7 +24,7 @@ async fn main() {
     let command_line_arguments = CommandLineArguments::parse();
     let configuration = read_configuration_from_file(&command_line_arguments.configuration_file);
 
-    let store = match Sql::new(configuration.sql_database_path).await {
+    let store = match Sql::new(&configuration.sql_database_path).await {
         Ok(store) => store,
         Err(e) => panic!("Failed to construct store: {}", e),
     };

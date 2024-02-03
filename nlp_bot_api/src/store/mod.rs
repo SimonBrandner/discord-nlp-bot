@@ -14,10 +14,10 @@ pub struct Sql {
 }
 
 impl Sql {
-    pub async fn new(file_path: String) -> Result<Self, sqlx::Error> {
-        if !Sqlite::database_exists(&file_path).await.unwrap_or(false) {
+    pub async fn new(file_path: &str) -> Result<Self, sqlx::Error> {
+        if !Sqlite::database_exists(file_path).await.unwrap_or(false) {
             log::info!("Database does not exist - creating...");
-            match Sqlite::create_database(&file_path).await {
+            match Sqlite::create_database(file_path).await {
                 Ok(()) => log::info!("Database created successfully!"),
                 Err(e) => return Err(e),
             }
@@ -109,7 +109,7 @@ impl Sql {
             .expect("Failed to add messages to database!");
     }
 
-    pub async fn add_container(&self, container: container::Container) {
+    pub async fn add_container(&self, container: &container::Container) {
         sqlx::query!(
             "INSERT INTO containers (container_id, container_parent_id) VALUES (?, ?);",
             container.container_id,
