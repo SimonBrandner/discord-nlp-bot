@@ -33,5 +33,6 @@ async fn main() {
     let bot = Bot::new(processor.clone());
 
     log::info!("Starting bot...");
+    tokio::spawn(async move { processor.clone().cache_ngrams().await });
     start(bot, configuration.discord_token).await;
 }

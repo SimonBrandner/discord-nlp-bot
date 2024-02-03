@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT container_id FROM containers WHERE container_parent_id=?;",
+  "describe": {
+    "columns": [
+      {
+        "name": "container_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f865a7624f760b1d85d1712fd1e4ef7e9ea552a2ba73efe7c894a3d301b2edd1"
+}

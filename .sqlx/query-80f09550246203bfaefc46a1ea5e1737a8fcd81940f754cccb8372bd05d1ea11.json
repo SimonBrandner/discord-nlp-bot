@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE entries SET ngrams_cached=true WHERE message_id IN (?);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "80f09550246203bfaefc46a1ea5e1737a8fcd81940f754cccb8372bd05d1ea11"
+}

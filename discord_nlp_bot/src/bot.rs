@@ -1,6 +1,7 @@
 use crate::makers::make_message;
+use nlp_bot_api::processor::message;
 use nlp_bot_api::processor::{container, Processor};
-use serenity::all::{ChannelType, GatewayIntents, Guild, GuildChannel, Message, MessageId};
+use serenity::all::{ChannelType, GatewayIntents, Guild, GuildChannel, MessageId};
 use serenity::builder::GetMessages;
 use serenity::client::EventHandler;
 use serenity::http::CacheHttp;
@@ -9,6 +10,7 @@ use serenity::prelude::Context;
 use serenity::{async_trait, Client, Error};
 use std::sync::Arc;
 
+// TODO: We can increase this when we have have implemented batching in the store
 const MESSAGE_LIMIT: u8 = 100;
 
 #[derive(PartialEq, Debug)]
@@ -97,7 +99,8 @@ impl Bot {
         direction: PaginationDirection,
     ) -> Result<(), Error> {
         log::info!(
-            "Paginating in container {} in direction {:?}",
+            "Paginating in container {} ({}) in direction {:?}",
+            channel.name,
             channel.id,
             direction
         );
@@ -121,11 +124,8 @@ impl Bot {
                 None => break,
             };
 
-            for discord_message in messages {
-                self.processor
-                    .add_message(make_message(&discord_message))
-                    .await;
-            }
+            let entries: Vec<message::Message> = messages.iter().map(make_message).collect();
+            self.processor.add_messages(entries.as_slice()).await;
 
             get_messages = match direction {
                 PaginationDirection::Up { message_id: _id } => get_messages.before(last_message_id),
@@ -170,7 +170,7 @@ impl EventHandler for Bot {
     // TODO: Handle updates
     // TODO: Model relations (replies)
 
-    async fn message(&self, _context: Context, new_message: Message) {
+    async fn message(&self, _context: Context, new_message: serenity::all::Message) {
         self.processor.add_message(make_message(&new_message)).await;
     }
 

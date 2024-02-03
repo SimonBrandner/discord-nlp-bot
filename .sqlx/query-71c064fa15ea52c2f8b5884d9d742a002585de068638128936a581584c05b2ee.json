@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    SELECT * FROM entries WHERE ngrams_cached=false AND unix_timestamp < (\n                        SELECT unix_timestamp FROM entries WHERE message_id=?\n                    ) ORDER BY unix_timestamp DESC LIMIT ?;\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "message_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "container_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "sender_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "unix_timestamp",
+        "ordinal": 3,
+        "type_info": "Int64"
+      },
+      {
+        "name": "content",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "ngrams_cached",
+        "ordinal": 5,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "71c064fa15ea52c2f8b5884d9d742a002585de068638128936a581584c05b2ee"
+}
