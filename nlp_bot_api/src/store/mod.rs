@@ -4,6 +4,7 @@ use crate::processor::entry::Entry;
 use crate::processor::ngram::Ngram;
 use sqlx::migrate;
 use sqlx::migrate::MigrateError;
+use sqlx::sqlite::SqliteQueryResult;
 use sqlx::Error;
 use sqlx::QueryBuilder;
 use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
@@ -14,28 +15,21 @@ pub struct Sql {
 }
 
 impl Sql {
-    pub async fn new(file_path: &str) -> Result<Self, sqlx::Error> {
+    pub async fn new(file_path: &str) -> Result<Self, Error> {
         if !Sqlite::database_exists(file_path).await.unwrap_or(false) {
             log::info!("Database does not exist - creating...");
-            match Sqlite::create_database(file_path).await {
-                Ok(()) => log::info!("Database created successfully!"),
-                Err(e) => return Err(e),
-            }
+            Sqlite::create_database(file_path).await?;
+            log::info!("Database created successfully!");
         }
 
         let database_connection =
-            match SqliteConnection::connect(format!("sqlite://{}", file_path).as_str()).await {
-                Ok(c) => c,
-                Err(e) => return Err(e),
-            };
+            SqliteConnection::connect(format!("sqlite://{}", file_path).as_str()).await?;
 
         let sql = Self {
             connection: Mutex::new(database_connection),
         };
 
-        if let Err(e) = sql.migrate().await {
-            return Err(e.into());
-        }
+        sql.migrate().await?;
 
         Ok(sql)
     }
@@ -47,7 +41,10 @@ impl Sql {
     }
 
     // TODO: Batch this
-    pub async fn mark_entry_as_ngrams_cached(&self, entry_ids: &[String]) {
+    pub async fn mark_entry_as_ngrams_cached(
+        &self,
+        entry_ids: &[String],
+    ) -> Result<SqliteQueryResult, Error> {
         let entry_ids_string = entry_ids.join(",");
 
         sqlx::query!(
@@ -56,12 +53,11 @@ impl Sql {
         )
         .execute(&mut *self.connection.lock().await)
         .await
-        .expect("Failed to mark entries ngrams as cached!");
     }
 
-    pub async fn add_ngrams(&self, ngrams: &[Ngram]) {
+    pub async fn add_ngrams(&self, ngrams: &[Ngram]) -> Result<SqliteQueryResult, Error> {
         if ngrams.is_empty() {
-            return;
+            return Ok(SqliteQueryResult::default());
         }
 
         let mut query_builder = QueryBuilder::new(
@@ -82,12 +78,15 @@ impl Sql {
             .build()
             .execute(&mut *self.connection.lock().await)
             .await
-            .expect("Failed to add ngrams to database!");
     }
 
-    pub async fn add_entry(&self, entries: &[entry::Entry], ngrams_cached: bool) {
+    pub async fn add_entry(
+        &self,
+        entries: &[entry::Entry],
+        ngrams_cached: bool,
+    ) -> Result<SqliteQueryResult, Error> {
         if entries.is_empty() {
-            return;
+            return Ok(SqliteQueryResult::default());
         }
 
         let mut query_builder = QueryBuilder::new(
@@ -106,10 +105,12 @@ impl Sql {
             .build()
             .execute(&mut *self.connection.lock().await)
             .await
-            .expect("Failed to add entries to database!");
     }
 
-    pub async fn add_container(&self, container: &container::Container) {
+    pub async fn add_container(
+        &self,
+        container: &container::Container,
+    ) -> Result<SqliteQueryResult, Error> {
         sqlx::query!(
             "INSERT INTO containers (container_id, container_parent_id) VALUES (?, ?);",
             container.container_id,
@@ -117,35 +118,32 @@ impl Sql {
         )
         .execute(&mut *self.connection.lock().await)
         .await
-        .expect("Failed to add container to database!");
     }
 
     pub async fn get_last_entry_id_in_container(
         &self,
         container_id: &str,
     ) -> Result<String, Error> {
-        match sqlx::query!(
+        let result =  sqlx::query!(
             "SELECT entry_id FROM entries WHERE container_id=? ORDER BY unix_timestamp DESC LIMIT 1;",
             container_id
         )
-        .fetch_one(&mut *self.connection.lock().await).await {
-            Ok(o) => Ok(o.entry_id),
-            Err(e) => Err(e),
-        }
+        .fetch_one(&mut *self.connection.lock().await).await?;
+
+        Ok(result.entry_id)
     }
 
     pub async fn get_first_entry_id_in_container(
         &self,
         container_id: &str,
     ) -> Result<String, Error> {
-        match sqlx::query!(
+        let result =  sqlx::query!(
             "SELECT entry_id FROM entries WHERE container_id=? ORDER BY unix_timestamp ASC LIMIT 1;",
             container_id
         )
-        .fetch_one(&mut *self.connection.lock().await).await {
-            Ok(o) => Ok(o.entry_id),
-            Err(e) => Err(e),
-        }
+        .fetch_one(&mut *self.connection.lock().await).await?;
+
+        Ok(result.entry_id)
     }
 
     pub async fn get_entries_without_cached_ngrams(
@@ -212,29 +210,25 @@ impl Sql {
 
     /// This method only looks in the container itself, not its children.
     pub async fn get_ngram_count_in_container(&self, container_id: &str) -> Result<i32, Error> {
-        match sqlx::query!(
+        let result = sqlx::query!(
             "SELECT COUNT(*) as count FROM ngrams WHERE container_id=?;",
             container_id
         )
         .fetch_one(&mut *self.connection.lock().await)
-        .await
-        {
-            Ok(o) => Ok(o.count),
-            Err(e) => Err(e),
-        }
+        .await?;
+
+        Ok(result.count)
     }
 
     /// This method only looks in the container itself, not its children.
     pub async fn get_entries_count_in_container(&self, container_id: &str) -> Result<i32, Error> {
-        match sqlx::query!(
+        let result = sqlx::query!(
             "SELECT COUNT(*) as count FROM entries WHERE container_id=?;",
             container_id
         )
         .fetch_one(&mut *self.connection.lock().await)
-        .await
-        {
-            Ok(o) => Ok(o.count),
-            Err(e) => Err(e),
-        }
+        .await?;
+
+        Ok(result.count)
     }
 }

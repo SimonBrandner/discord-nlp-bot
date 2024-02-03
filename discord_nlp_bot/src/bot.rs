@@ -114,10 +114,7 @@ impl Bot {
         };
 
         loop {
-            let messages = match channel.messages(context.http(), get_messages).await {
-                Ok(messages) => messages,
-                Err(error) => return Err(error),
-            };
+            let messages = channel.messages(context.http(), get_messages).await?;
 
             let last_message_id = match messages.last() {
                 Some(message) => message.id,
@@ -125,7 +122,10 @@ impl Bot {
             };
 
             let entries: Vec<Entry> = messages.iter().map(make_entry).collect();
-            self.processor.add_entries(entries.as_slice()).await;
+            self.processor
+                .add_entries(entries.as_slice())
+                .await
+                .expect("Failed to add entries!");
 
             get_messages = match direction {
                 PaginationDirection::Up { message_id: _id } => get_messages.before(last_message_id),
@@ -144,7 +144,8 @@ impl Bot {
                 container_id: channel.id.to_string(),
                 container_parent_id: channel.guild_id.to_string(),
             })
-            .await;
+            .await
+            .expect("Failed to add container for channel!");
 
         self.paginate(context, channel).await;
     }
@@ -155,7 +156,8 @@ impl Bot {
                 container_id: guild.id.to_string(),
                 container_parent_id: String::from("discord"),
             })
-            .await;
+            .await
+            .expect("Failed to add container for guild!");
 
         for channel in guild.channels.values() {
             if channel.kind == ChannelType::Text {
@@ -171,7 +173,10 @@ impl EventHandler for Bot {
     // TODO: Model relations (replies)
 
     async fn message(&self, _context: Context, new_message: Message) {
-        self.processor.add_entry(make_entry(&new_message)).await;
+        self.processor
+            .add_entry(make_entry(&new_message))
+            .await
+            .expect("Failed to add entry!");
     }
 
     async fn cache_ready(&self, context: Context, guilds: Vec<GuildId>) {

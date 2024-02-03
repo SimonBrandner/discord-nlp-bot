@@ -3,9 +3,19 @@ pub mod entry;
 pub mod ngram;
 
 use crate::store;
-use sqlx::Error;
 
 const ENTRY_LIMIT: u32 = 100;
+
+#[derive(Debug)]
+pub enum Error {
+    DatabaseError(sqlx::Error),
+}
+
+impl From<sqlx::Error> for Error {
+    fn from(err: sqlx::Error) -> Self {
+        Self::DatabaseError(err)
+    }
+}
 
 pub struct Processor {
     store: store::Sql,
@@ -20,16 +30,10 @@ impl Processor {
     pub async fn cache_ngrams(&self) -> Result<(), Error> {
         let mut start_index: Option<String> = None;
         loop {
-            let entries = match self
+            let entries = self
                 .store
                 .get_entries_without_cached_ngrams(ENTRY_LIMIT, start_index)
-                .await
-            {
-                Ok(entries) => entries,
-                Err(e) => {
-                    return Err(e);
-                }
-            };
+                .await?;
 
             start_index = match entries.last() {
                 Some(entry) => Some(entry.entry_id.clone()),
@@ -39,27 +43,31 @@ impl Processor {
             let entry_ids: Vec<String> = entries.iter().map(|m| m.entry_id.clone()).collect();
             let ngrams = entry::Entry::get_ngrams_from_entries_slice(entries.as_slice());
 
-            self.store.add_ngrams(ngrams.as_slice()).await;
-            self.store.mark_entry_as_ngrams_cached(&entry_ids).await;
+            self.store.add_ngrams(ngrams.as_slice()).await?;
+            self.store.mark_entry_as_ngrams_cached(&entry_ids).await?;
         }
 
         log::info!("Cached ngrams for all entries.");
         Ok(())
     }
 
-    pub async fn add_entry(&self, entry: entry::Entry) {
-        self.add_entries([entry].as_slice()).await;
+    pub async fn add_entry(&self, entry: entry::Entry) -> Result<(), Error> {
+        self.add_entries([entry].as_slice()).await
     }
 
-    pub async fn add_entries(&self, entries: &[entry::Entry]) {
+    pub async fn add_entries(&self, entries: &[entry::Entry]) -> Result<(), Error> {
         let ngrams = entry::Entry::get_ngrams_from_entries_slice(entries);
 
-        self.store.add_ngrams(ngrams.as_slice()).await;
-        self.store.add_entry(entries, true).await;
+        self.store.add_ngrams(ngrams.as_slice()).await?;
+        self.store.add_entry(entries, true).await?;
+
+        Ok(())
     }
 
-    pub async fn add_container(&self, container: &container::Container) {
-        self.store.add_container(container).await;
+    pub async fn add_container(&self, container: &container::Container) -> Result<(), Error> {
+        self.store.add_container(container).await?;
+
+        Ok(())
     }
 
     pub async fn get_first_and_last_entry_id_in_container(
@@ -73,15 +81,21 @@ impl Processor {
     }
 
     async fn get_last_entry_id_in_container(&self, container_id: &str) -> Result<String, Error> {
-        self.store
+        let last_entry_id = self
+            .store
             .get_last_entry_id_in_container(container_id)
-            .await
+            .await?;
+
+        Ok(last_entry_id)
     }
 
     async fn get_first_entry_id_in_container(&self, container_id: &str) -> Result<String, Error> {
-        self.store
+        let first_entry_id = self
+            .store
             .get_first_entry_id_in_container(container_id)
-            .await
+            .await?;
+
+        Ok(first_entry_id)
     }
 
     /// This returns the parent `container_id` as well.
