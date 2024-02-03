@@ -59,7 +59,7 @@ impl Processor {
         let ngrams = entry::Entry::get_ngrams_from_entries_slice(entries);
 
         self.store.add_ngrams(ngrams.as_slice()).await?;
-        self.store.add_entry(entries, true).await?;
+        self.store.add_entries(entries, true).await?;
 
         Ok(())
     }

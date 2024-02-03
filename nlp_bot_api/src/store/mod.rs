@@ -80,7 +80,7 @@ impl Sql {
             .await
     }
 
-    pub async fn add_entry(
+    pub async fn add_entries(
         &self,
         entries: &[entry::Entry],
         ngrams_cached: bool,
