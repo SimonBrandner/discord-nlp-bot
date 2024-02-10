@@ -1,6 +1,19 @@
+use std::str::FromStr;
 pub enum Order {
     Ascending,
     Descending,
+}
+
+impl FromStr for Order {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "asc" => Ok(Self::Ascending),
+            "desc" => Ok(Self::Descending),
+            _ => Err(String::from("Invalid order")),
+        }
+    }
 }
 
 pub struct MostUsedNgramFilter {

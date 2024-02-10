@@ -1,5 +1,8 @@
-use nlp_bot_api::{displayers::ascii_table::display_ngram_list, processor::Processor};
+use nlp_bot_api::{
+    displayers::ascii_table::display_ngram_list, processor::Processor, store::filters::Order,
+};
 use serenity::all::Member;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::message_formatters::format_table;
@@ -47,7 +50,23 @@ pub async fn ngrams_by_count(
     #[description = "Look for n-grams sent by this user."] sender: Option<Member>,
     #[description = "Length of the n-grams to look for."] length: Option<u32>,
     #[description = "The amount of n-grams to get."] amount: Option<u32>,
+    #[description = "The way to order n-grams by occurrence count. Either `asc` or `desc`"]
+    #[rename = "order"]
+    order_string: Option<String>,
 ) -> Result<(), Error> {
+    let mut order: Option<Order> = None;
+    if let Some(order_string) = order_string {
+        match Order::from_str(&order_string) {
+            Ok(order_string) => order = Some(order_string),
+            Err(_) => {
+                return send_error_message(
+                    &context,
+                    "The order you specified was neither `asc` nor `desc`",
+                )
+                .await;
+            }
+        }
+    }
     if length.is_some() && length < Some(1) || length > Some(5) {
         return send_error_message(
             &context,
@@ -65,6 +84,7 @@ pub async fn ngrams_by_count(
             length,
             amount,
             vec![context.channel_id().to_string()].as_slice(),
+            order,
         )
         .await;
 

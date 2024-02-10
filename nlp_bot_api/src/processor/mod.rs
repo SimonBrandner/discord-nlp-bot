@@ -3,7 +3,10 @@ pub mod entry;
 pub mod ngram;
 
 use self::ngram::NgramForByCountCommand;
-use crate::store::{self, filters::MostUsedNgramFilter};
+use crate::store::{
+    self,
+    filters::{MostUsedNgramFilter, Order},
+};
 use core::fmt;
 
 const ENTRY_LIMIT: u32 = 1000;
@@ -169,12 +172,13 @@ impl Processor {
         length: Option<u32>,
         limit: Option<u32>,
         container_ids: &[String],
+        order: Option<Order>,
     ) -> Result<Vec<NgramForByCountCommand>, Error> {
         let mut ngram_filter = MostUsedNgramFilter {
             sender_id,
             length,
             limit: limit.unwrap_or(MostUsedNgramFilter::default().limit),
-            order: MostUsedNgramFilter::default().order,
+            order: order.unwrap_or(MostUsedNgramFilter::default().order),
             container_ids: Vec::new(),
         };
 
