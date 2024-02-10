@@ -1,6 +1,8 @@
+use crate::commands::{on_error, on_ngrams_by_count, SharedCommandData};
 use crate::makers::make_entry;
 use nlp_bot_api::processor::entry::Entry;
 use nlp_bot_api::processor::{container, Processor};
+use poise::{Framework, FrameworkOptions, PrefixFrameworkOptions};
 use serenity::all::{ChannelType, GatewayIntents, Guild, GuildChannel, Message, MessageId};
 use serenity::builder::GetMessages;
 use serenity::client::EventHandler;
@@ -9,6 +11,7 @@ use serenity::model::id::GuildId;
 use serenity::prelude::Context;
 use serenity::{async_trait, Client, Error};
 use std::sync::Arc;
+use std::time::Duration;
 
 const MESSAGE_LIMIT: u8 = 100;
 
@@ -20,11 +23,35 @@ enum PaginationDirection {
     Down { message_id: MessageId },
 }
 
-pub async fn start(bot: Bot, token: String) {
+pub async fn start(bot: Bot, processor: Arc<Processor>, token: String) {
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
+    let options = FrameworkOptions {
+        commands: vec![on_ngrams_by_count()],
+        prefix_options: PrefixFrameworkOptions {
+            prefix: Some("/nlp".into()),
+            edit_tracker: Some(Arc::new(poise::EditTracker::for_timespan(
+                Duration::from_secs(3600),
+            ))),
+            ..Default::default()
+        },
+        on_error: |error| Box::pin(on_error(error)),
+        ..Default::default()
+    };
+    let framework = Framework::builder()
+        .setup(move |ctx, _ready, framework| {
+            Box::pin(async move {
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                Ok(SharedCommandData {
+                    processor: processor.clone(),
+                })
+            })
+        })
+        .options(options)
+        .build();
 
     let mut client = Client::builder(token, intents)
         .event_handler(bot)
+        .framework(framework)
         .await
         .expect("Failed to build client");
 

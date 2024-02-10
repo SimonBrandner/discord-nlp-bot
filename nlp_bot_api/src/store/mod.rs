@@ -1,12 +1,16 @@
+pub mod filters;
+
+use self::filters::MostUsedNgramFilter;
 use crate::processor::container;
 use crate::processor::entry;
 use crate::processor::entry::Entry;
-use crate::processor::ngram::Ngram;
+use crate::processor::ngram::{NgramForByCountCommand, NgramForStore};
 use sqlx::migrate;
 use sqlx::migrate::MigrateError;
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::Error;
 use sqlx::QueryBuilder;
+use sqlx::Row;
 use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
 use tokio::sync::Mutex;
 
@@ -57,7 +61,7 @@ impl Sql {
         .await
     }
 
-    pub async fn add_ngrams(&self, ngrams: &[Ngram]) -> Result<(), Error> {
+    pub async fn add_ngrams(&self, ngrams: &[NgramForStore]) -> Result<(), Error> {
         if ngrams.is_empty() {
             return Ok(());
         }
@@ -242,5 +246,53 @@ impl Sql {
         .await?;
 
         Ok(result.count)
+    }
+
+    pub async fn get_ngrams_by_count(
+        &self,
+        filter: &MostUsedNgramFilter,
+    ) -> Result<Vec<NgramForByCountCommand>, Error> {
+        let mut query_builder =
+            QueryBuilder::new("SELECT content, SUM(count) as total_count FROM ngrams WHERE ");
+
+        query_builder.push("container_id IN (");
+        query_builder.push_bind(filter.container_ids.join(","));
+        query_builder.push(") ");
+
+        if let Some(sender_id) = &filter.sender_id {
+            query_builder.push("AND sender_id=");
+            query_builder.push_bind(sender_id);
+            query_builder.push(" ");
+        }
+        if let Some(length) = &filter.length {
+            query_builder.push("AND length=");
+            query_builder.push_bind(length);
+            query_builder.push(" ");
+        }
+
+        query_builder.push("GROUP BY content ORDER BY total_count ");
+
+        match filter.order {
+            filters::Order::Ascending => query_builder.push("ASC "),
+            filters::Order::Descending => query_builder.push("DESC "),
+        };
+
+        query_builder.push("LIMIT ");
+        query_builder.push_bind(filter.limit);
+
+        let ngrams = query_builder
+            .build()
+            .fetch_all(&mut *self.connection.lock().await)
+            .await
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|row| NgramForByCountCommand {
+                        content: row.get("content"),
+                        occurrence_count: row.get("total_count"),
+                    })
+                    .collect()
+            })?;
+
+        Ok(ngrams)
     }
 }

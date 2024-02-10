@@ -1,5 +1,5 @@
 use super::ngram::{
-    get_ngram_time, get_ngrams_in_word_list, Ngram, ALLOWED_NGRAM_CHARACTERS_REGEX,
+    get_ngram_time, get_ngrams_in_word_list, NgramForStore, ALLOWED_NGRAM_CHARACTERS_REGEX,
     MAX_NGRAM_LENGTH,
 };
 
@@ -13,7 +13,7 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn get_ngrams(&self) -> Vec<Ngram> {
+    pub fn get_ngrams(&self) -> Vec<NgramForStore> {
         let lower_case_content = self.content.to_lowercase();
         let words: Vec<String> = ALLOWED_NGRAM_CHARACTERS_REGEX
             .find_iter(&lower_case_content)
@@ -22,7 +22,7 @@ impl Entry {
 
         get_ngrams_in_word_list(words.as_slice(), MAX_NGRAM_LENGTH)
             .iter()
-            .map(|words| Ngram {
+            .map(|words| NgramForStore {
                 content: words.join(" "),
                 #[allow(clippy::cast_possible_truncation)]
                 length: words.len() as u32,
@@ -33,7 +33,7 @@ impl Entry {
             .collect()
     }
 
-    pub fn get_ngrams_from_entries_slice(entries: &[Self]) -> Vec<Ngram> {
+    pub fn get_ngrams_from_entries_slice(entries: &[Self]) -> Vec<NgramForStore> {
         let mut ngrams = Vec::new();
         for entry in entries {
             ngrams.extend(entry.get_ngrams());

@@ -42,10 +42,15 @@ pub const fn get_ngram_time(time: i64) -> i64 {
     time - (time % SECONDS_IN_WEEK)
 }
 
-pub struct Ngram {
+pub struct NgramForStore {
     pub content: String,
     pub length: u32,
     pub time: i64,
     pub container_id: String,
     pub sender_id: String,
+}
+
+pub struct NgramForByCountCommand {
+    pub content: String,
+    pub occurrence_count: u32,
 }

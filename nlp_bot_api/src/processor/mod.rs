@@ -2,7 +2,9 @@ pub mod container;
 pub mod entry;
 pub mod ngram;
 
-use crate::store;
+use self::ngram::NgramForByCountCommand;
+use crate::store::{self, filters::MostUsedNgramFilter};
+use core::fmt;
 
 const ENTRY_LIMIT: u32 = 1000;
 
@@ -14,6 +16,14 @@ pub enum Error {
 impl From<sqlx::Error> for Error {
     fn from(err: sqlx::Error) -> Self {
         Self::DatabaseError(err)
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DatabaseError(err) => write!(f, "Database error: {}", err),
+        }
     }
 }
 
@@ -151,5 +161,31 @@ impl Processor {
         }
 
         Ok(entries_count)
+    }
+
+    pub async fn get_ngrams_by_count(
+        &self,
+        sender_id: Option<String>,
+        length: Option<u32>,
+        limit: Option<u32>,
+        container_ids: &[String],
+    ) -> Result<Vec<NgramForByCountCommand>, Error> {
+        let mut ngram_filter = MostUsedNgramFilter {
+            sender_id,
+            length,
+            limit: limit.unwrap_or(MostUsedNgramFilter::default().limit),
+            order: MostUsedNgramFilter::default().order,
+            container_ids: Vec::new(),
+        };
+
+        // Get all of the child `container_ids` as well
+        let mut new_container_ids = Vec::new();
+        for container_id in container_ids {
+            new_container_ids.extend(self.get_child_container_ids(container_id).await?);
+        }
+        ngram_filter.container_ids = new_container_ids;
+
+        let ngrams = self.store.get_ngrams_by_count(&ngram_filter).await?;
+        Ok(ngrams)
     }
 }

@@ -1,7 +1,9 @@
 mod bot;
+mod commands;
 mod config;
 mod file;
 mod makers;
+mod message_formatters;
 
 use bot::{start, Bot};
 use clap::Parser;
@@ -31,8 +33,10 @@ async fn main() {
 
     let processor = Arc::new(Processor::new(store));
     let bot = Bot::new(processor.clone());
+    let processor_for_caching_ngrams = processor.clone();
+    let processor_for_bot = processor.clone();
 
     log::info!("Starting bot...");
-    tokio::spawn(async move { processor.clone().cache_ngrams().await });
-    start(bot, configuration.discord_token).await;
+    tokio::spawn(async move { processor_for_caching_ngrams.cache_ngrams().await });
+    start(bot, processor_for_bot, configuration.discord_token).await;
 }
