@@ -1,35 +1,13 @@
 # Discord NLP Bot
 
-A Discord Bot to perform Natural Language Processing (NLP).
+A Discord Bot to perform Natural Language Processing (NLP) and related tasks.
 
-## Development
+## Features
 
-### Setup
+### N-grams
 
-- Install Git, Rust, SQLite, SQLX CLI
-- Run the following:
+- Finding most used n-grams
+  - By user
+  - By n-gram length
 
-```console
-git clone https://github.com/SimonBrandner/discord-nlp-bot.git
-cd discord-nlp-bot
-
-cp .env.sample .env
-cp discord_nlp_bot/config.sample.json discord_nlp_bot/config.json
-
-cargo sqlx database create
-cargo sqlx migrate run --source nlp_bot_api/src/migrations
-
-cd discord_nlp_bot
-cargo run
-```
-
-### Database
-
-#### Updating
-
-- Add a new migration using `sqlx migrate add <name> --source nlp_bot_api/src/migrations`
-- Run the migration using `cargo sqlx migrate run --source nlp_bot_api/src/migrations`
-
-#### Writing queries
-
-- Run `cargo sqlx prepare --workspace`
+![alt text](docs/images/ngrams_by_count.png)
