@@ -1,4 +1,4 @@
-use crate::commands::{on_error, on_ngrams_by_count, SharedCommandData};
+use crate::commands::{ngrams_by_count, on_error, SharedCommandData};
 use crate::makers::make_entry;
 use nlp_bot_api::processor::entry::Entry;
 use nlp_bot_api::processor::{container, Processor};
@@ -26,7 +26,7 @@ enum PaginationDirection {
 pub async fn start(bot: Bot, processor: Arc<Processor>, token: String) {
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
     let options = FrameworkOptions {
-        commands: vec![on_ngrams_by_count()],
+        commands: vec![ngrams_by_count()],
         prefix_options: PrefixFrameworkOptions {
             prefix: Some("/nlp".into()),
             edit_tracker: Some(Arc::new(poise::EditTracker::for_timespan(

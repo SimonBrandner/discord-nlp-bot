@@ -27,11 +27,10 @@ pub async fn on_error(error: poise::FrameworkError<'_, SharedCommandData, Error>
 
 async fn send_error_message(context: &Context<'_>, error: &str) -> Result<(), Error> {
     context
-        .channel_id()
-        .say(
-            context.http(),
-            format!("Failed to get information from database! {}", error),
-        )
+        .say(format!(
+            "Failed to get information from database! {}",
+            error
+        ))
         .await?;
 
     Ok(())
@@ -39,11 +38,11 @@ async fn send_error_message(context: &Context<'_>, error: &str) -> Result<(), Er
 
 #[poise::command(
     prefix_command,
+    slash_command,
     track_edits,
-    aliases("ngrams_by_count"),
     required_permissions = "SEND_MESSAGES"
 )]
-pub async fn on_ngrams_by_count(
+pub async fn ngrams_by_count(
     context: Context<'_>,
     #[description = "Look for n-grams sent by this user."] sender: Option<Member>,
     #[description = "Length of the n-grams to look for."] length: Option<u32>,
@@ -77,10 +76,7 @@ pub async fn on_ngrams_by_count(
     };
 
     if ngrams.is_empty() {
-        context
-            .channel_id()
-            .say(context.http(), "No n-grams found!")
-            .await?;
+        context.say("No n-grams found!").await?;
         return Ok(());
     }
 
@@ -92,10 +88,7 @@ pub async fn on_ngrams_by_count(
 
     let ngrams_table = display_ngram_list(ngrams.as_slice());
     let ngrams_message_content = format_table(&ngrams_table, &heading);
-    context
-        .channel_id()
-        .say(context.http(), ngrams_message_content)
-        .await?;
+    context.say(ngrams_message_content).await?;
 
     Ok(())
 }
