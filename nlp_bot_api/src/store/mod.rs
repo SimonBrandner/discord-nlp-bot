@@ -114,6 +114,7 @@ impl Sql {
                     .push_bind(entry.unix_timestamp)
                     .push_bind(ngrams_cached);
             });
+            query_builder.push(" ON CONFLICT (entry_id) DO NOTHING;");
             query_builder
                 .build()
                 .execute(&mut *self.connection.lock().await)
