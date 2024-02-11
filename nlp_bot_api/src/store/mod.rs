@@ -128,7 +128,7 @@ impl Sql {
         container: &container::Container,
     ) -> Result<SqliteQueryResult, Error> {
         sqlx::query!(
-            "INSERT INTO containers (container_id, container_parent_id) VALUES (?, ?);",
+            "INSERT INTO containers (container_id, container_parent_id) VALUES (?, ?) ON CONFLICT DO NOTHING;",
             container.container_id,
             container.container_parent_id
         )
