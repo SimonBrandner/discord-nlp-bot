@@ -47,18 +47,28 @@ impl Sql {
             .await
     }
 
-    pub async fn mark_entry_as_ngrams_cached(
-        &self,
-        entry_ids: &[String],
-    ) -> Result<SqliteQueryResult, Error> {
-        let entry_ids_string = entry_ids.join(",");
+    pub async fn mark_entry_as_ngrams_cached(&self, entry_ids: &[String]) -> Result<(), Error> {
+        if entry_ids.is_empty() {
+            return Ok(());
+        }
 
-        sqlx::query!(
-            "UPDATE entries SET ngrams_cached=true WHERE entry_id IN (?);",
-            entry_ids_string
-        )
-        .execute(&mut *self.connection.lock().await)
-        .await
+        let mut query_builder =
+            QueryBuilder::new("UPDATE entries SET ngrams_cached=true WHERE entry_id IN (");
+        for (index, entry_id) in entry_ids.iter().enumerate() {
+            query_builder.push_bind(entry_id);
+
+            if index != entry_ids.len() - 1 {
+                query_builder.push(",");
+            }
+        }
+        query_builder.push(");");
+
+        query_builder
+            .build()
+            .execute(&mut *self.connection.lock().await)
+            .await?;
+
+        Ok(())
     }
 
     pub async fn add_ngrams(&self, ngrams: &[NgramForStore]) -> Result<(), Error> {
