@@ -1,6 +1,8 @@
 pub mod filters;
+mod utils;
 
 use self::filters::MostUsedNgramFilter;
+use self::utils::build_in_clause;
 use crate::processor::container;
 use crate::processor::entry;
 use crate::processor::entry::Entry;
@@ -52,16 +54,9 @@ impl Sql {
             return Ok(());
         }
 
-        let mut query_builder =
-            QueryBuilder::new("UPDATE entries SET ngrams_cached=true WHERE entry_id IN (");
-        for (index, entry_id) in entry_ids.iter().enumerate() {
-            query_builder.push_bind(entry_id);
-
-            if index != entry_ids.len() - 1 {
-                query_builder.push(",");
-            }
-        }
-        query_builder.push(");");
+        let mut query_builder = QueryBuilder::new("UPDATE entries SET ngrams_cached=true WHERE");
+        build_in_clause(&mut query_builder, "entry_id", entry_ids);
+        query_builder.push(";");
 
         query_builder
             .build()
