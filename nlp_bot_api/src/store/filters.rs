@@ -1,4 +1,6 @@
 use std::str::FromStr;
+
+#[derive(Debug)]
 pub enum Order {
     Ascending,
     Descending,
@@ -16,6 +18,7 @@ impl FromStr for Order {
     }
 }
 
+#[derive(Debug)]
 pub struct MostUsedNgramFilter {
     pub sender_id: Option<String>,
     pub length: Option<u32>,
