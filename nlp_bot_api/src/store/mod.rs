@@ -259,24 +259,40 @@ impl Sql {
         filter: &MostUsedNgramFilter,
     ) -> Result<Vec<NgramForByCountCommand>, Error> {
         let mut query_builder =
-            QueryBuilder::new("SELECT content, SUM(count) as total_count FROM ngrams WHERE ");
+            QueryBuilder::new("SELECT content, SUM(count) as total_count FROM ngrams");
 
-        query_builder.push("container_id IN (");
-        query_builder.push_bind(filter.container_ids.join(","));
-        query_builder.push(") ");
+        if !filter.container_ids.is_empty() || filter.sender_id.is_some() || filter.length.is_some()
+        {
+            query_builder.push(" WHERE ");
+        }
+
+        if !filter.container_ids.is_empty() {
+            build_in_clause(
+                &mut query_builder,
+                "container_id",
+                filter.container_ids.as_slice(),
+            );
+        }
+
+        if !filter.container_ids.is_empty() && filter.sender_id.is_some() {
+            query_builder.push(" AND ");
+        }
 
         if let Some(sender_id) = &filter.sender_id {
-            query_builder.push("AND sender_id=");
+            query_builder.push("sender_id=");
             query_builder.push_bind(sender_id);
-            query_builder.push(" ");
-        }
-        if let Some(length) = &filter.length {
-            query_builder.push("AND length=");
-            query_builder.push_bind(length);
-            query_builder.push(" ");
         }
 
-        query_builder.push("GROUP BY content ORDER BY total_count ");
+        if filter.sender_id.is_some() && filter.length.is_some() {
+            query_builder.push(" AND ");
+        }
+
+        if let Some(length) = &filter.length {
+            query_builder.push("length=");
+            query_builder.push_bind(length);
+        }
+
+        query_builder.push(" GROUP BY content ORDER BY total_count ");
 
         match filter.order {
             filters::Order::Ascending => query_builder.push("ASC "),
