@@ -6,8 +6,9 @@ A Discord Bot to perform Natural Language Processing (NLP) and related tasks.
 
 ### N-grams
 
-- Finding most used n-grams
-  - By user
+- Finding most/least used n-grams
+  - By sender
   - By n-gram length
+  - By context (channel, server, discord, all)
 
 ![alt text](docs/images/ngrams_by_count.png)
