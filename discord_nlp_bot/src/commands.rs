@@ -51,7 +51,7 @@ pub async fn ngrams_by_count(
     #[description = "Length of the n-grams to look for."] length: Option<u32>,
     #[description = "The amount of n-grams to get."] amount: Option<u32>,
     #[description = "Look for n-grams sent in this context. Either `channel`, `server`, `discord` or `all`."]
-    #[rename = "container"]
+    #[rename = "context"]
     container_context: Option<String>,
     #[description = "The way to order n-grams by occurrence count. Either `asc` or `desc`."]
     #[rename = "order"]
