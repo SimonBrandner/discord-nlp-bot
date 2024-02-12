@@ -39,6 +39,33 @@ async fn send_error_message(context: &Context<'_>, error: &str) -> Result<(), Er
     Ok(())
 }
 
+fn get_container_ids_from_context(
+    context: &Context<'_>,
+    container_context: Option<String>,
+) -> Result<Vec<String>, String> {
+    let container_ids: Vec<String>;
+    match container_context
+        .unwrap_or_else(|| String::from("server"))
+        .as_str()
+    {
+        "channel" => container_ids = vec![context.channel_id().to_string()],
+        "server" => match context.guild_id() {
+            Some(guild_id) => container_ids = vec![guild_id.to_string()],
+            None => return Err("You can't use the `server` container in a DM!".into()),
+        },
+        "discord" => container_ids = vec!["discord".to_string()],
+        "all" => container_ids = vec![],
+        _ => {
+            return Err(
+                "The container you specified was neither `channel`, `server`, `discord` nor `all`"
+                    .into(),
+            );
+        }
+    };
+
+    Ok(container_ids)
+}
+
 #[poise::command(
     prefix_command,
     slash_command,
@@ -70,32 +97,10 @@ pub async fn ngrams_by_count(
             }
         }
     }
-    let container_ids: Vec<String>;
-    match container_context
-        .unwrap_or_else(|| String::from("server"))
-        .as_str()
-    {
-        "channel" => container_ids = vec![context.channel_id().to_string()],
-        "server" => match context.guild_id() {
-            Some(guild_id) => container_ids = vec![guild_id.to_string()],
-            None => {
-                return send_error_message(
-                    &context,
-                    "You can't use the `server` container in a DM!",
-                )
-                .await;
-            }
-        },
-        "discord" => container_ids = vec!["discord".to_string()],
-        "all" => container_ids = vec![],
-        _ => {
-            return send_error_message(
-                &context,
-                "The container you specified was neither `channel`, `server`, `discord` nor `all`",
-            )
-            .await;
-        }
-    }
+    let container_ids = match get_container_ids_from_context(&context, container_context) {
+        Ok(container_ids) => container_ids,
+        Err(error) => return send_error_message(&context, &error).await,
+    };
     if length.is_some() && length < Some(1) || length > Some(5) {
         return send_error_message(
             &context,
