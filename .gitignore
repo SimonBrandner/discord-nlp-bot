@@ -1,6 +1,8 @@
 target/
 target/
+.direnv/
 
+.envrc
 .env
 config.json
 database.db

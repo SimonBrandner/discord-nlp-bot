@@ -6,6 +6,10 @@
     "[sql]": {
         "editor.defaultFormatter": "adpyke.vscode-sql-formatter"
     },
+    "[nix]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2
+    },
     "files.associations": {
         "*.schema": "sql",
     }

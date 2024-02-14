@@ -19,6 +19,29 @@ cd discord_nlp_bot
 cargo run
 ```
 
+## NixOS
+
+You will need to have flakes enabled (see the [NixOS Wiki](https://nixos.wiki/wiki/Flakes)).
+
+### The development environment
+
+You can use the following command to enter the development environment.
+
+```console
+nix develop
+```
+
+### VS Code
+
+If you want the `rust-analyzer` VS Code extension to work correctly, you'll need
+to have an `.envrc` file in your directory and the
+[`direnv`](https://marketplace.visualstudio.com/items?itemName=mkhl.direnv)
+extension installed.
+
+```console
+cp .envrc.sample .envrc
+```
+
 ## Database
 
 ### Updating
