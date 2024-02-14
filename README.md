@@ -12,3 +12,7 @@ A Discord Bot to perform Natural Language Processing (NLP) and related tasks.
   - By context (channel, server, discord, all)
 
 ![alt text](docs/images/ngrams_by_count.png)
+
+## Development
+
+See the [development documentation](./docs/development.md).
