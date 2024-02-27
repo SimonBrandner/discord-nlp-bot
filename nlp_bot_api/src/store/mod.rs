@@ -1,11 +1,13 @@
 pub mod filters;
 mod utils;
 
-use self::filters::MostUsedNgramFilter;
+use self::filters::NgramsByContentFilter;
+use self::filters::NgramsByCountFilter;
 use self::utils::build_in_clause;
 use crate::processor::container;
 use crate::processor::entry;
 use crate::processor::entry::Entry;
+use crate::processor::ngram::NgramsForByContentCommand;
 use crate::processor::ngram::{NgramForByCountCommand, NgramForStore};
 use sqlx::migrate;
 use sqlx::migrate::MigrateError;
@@ -256,7 +258,7 @@ impl Sql {
 
     pub async fn get_ngrams_by_count(
         &self,
-        filter: &MostUsedNgramFilter,
+        filter: &NgramsByCountFilter,
     ) -> Result<Vec<NgramForByCountCommand>, Error> {
         let mut query_builder =
             QueryBuilder::new("SELECT content, SUM(count) as total_count FROM ngrams");
@@ -310,11 +312,50 @@ impl Sql {
                 rows.into_iter()
                     .map(|row| NgramForByCountCommand {
                         content: row.get("content"),
-                        occurrence_count: row.get("total_count"),
+                        count: row.get("total_count"),
                     })
                     .collect()
             })?;
 
         Ok(ngrams)
+    }
+
+    pub async fn get_ngrams_by_content(
+        &self,
+        filter: &NgramsByContentFilter,
+    ) -> Result<Vec<NgramsForByContentCommand>, Error> {
+        let mut query_builder = QueryBuilder::new("SELECT count, time FROM ngrams WHERE");
+
+        query_builder.push(" content=");
+        query_builder.push_bind(&filter.content);
+
+        if !filter.container_ids.is_empty() {
+            query_builder.push(" AND ");
+            build_in_clause(
+                &mut query_builder,
+                "container_id",
+                filter.container_ids.as_slice(),
+            );
+        }
+
+        if let Some(sender_id) = &filter.sender_id {
+            query_builder.push(" AND sender_id=");
+            query_builder.push_bind(sender_id);
+        }
+
+        query_builder.push(" ORDER BY time ASC;");
+
+        query_builder
+            .build()
+            .fetch_all(&mut *self.connection.lock().await)
+            .await
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|row| NgramsForByContentCommand {
+                        count: row.get("count"),
+                        time: row.get("time"),
+                    })
+                    .collect()
+            })
     }
 }

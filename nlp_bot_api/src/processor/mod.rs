@@ -2,10 +2,10 @@ pub mod container;
 pub mod entry;
 pub mod ngram;
 
-use self::ngram::NgramForByCountCommand;
+use self::ngram::{NgramForByCountCommand, NgramsForByContentCommand};
 use crate::store::{
     self,
-    filters::{MostUsedNgramFilter, Order},
+    filters::{NgramsByContentFilter, NgramsByCountFilter, Order},
 };
 use core::fmt;
 
@@ -111,9 +111,8 @@ impl Processor {
         Ok(first_entry_id)
     }
 
-    /// This returns the parent `container_id` as well.
     async fn get_child_container_ids(&self, container_id: &str) -> Result<Vec<String>, Error> {
-        let mut container_ids = vec![container_id.to_string()];
+        let mut container_ids = Vec::new();
         let mut container_ids_to_explore = vec![container_id.to_string()];
 
         loop {
@@ -136,6 +135,18 @@ impl Processor {
         }
 
         Ok(container_ids)
+    }
+
+    async fn expand_container_ids_with_children(
+        &self,
+        container_ids: &[String],
+    ) -> Result<Vec<String>, Error> {
+        let mut new_container_ids = container_ids.to_vec();
+        for container_id in container_ids {
+            new_container_ids.extend(self.get_child_container_ids(container_id).await?);
+        }
+
+        Ok(new_container_ids)
     }
 
     pub async fn get_ngram_count_in_container(&self, container_id: &str) -> Result<i32, Error> {
@@ -174,22 +185,41 @@ impl Processor {
         container_ids: &[String],
         order: Option<Order>,
     ) -> Result<Vec<NgramForByCountCommand>, Error> {
-        let mut ngram_filter = MostUsedNgramFilter {
+        let expanded_container_ids = self
+            .expand_container_ids_with_children(container_ids)
+            .await?;
+
+        let ngram_filter = NgramsByCountFilter {
             sender_id,
             length,
-            limit: limit.unwrap_or(MostUsedNgramFilter::default().limit),
-            order: order.unwrap_or(MostUsedNgramFilter::default().order),
-            container_ids: Vec::new(),
+            limit: limit.unwrap_or(NgramsByCountFilter::default().limit),
+            order: order.unwrap_or(NgramsByCountFilter::default().order),
+            container_ids: expanded_container_ids,
         };
 
-        // Get all of the child `container_ids` as well
-        let mut new_container_ids = Vec::new();
-        for container_id in container_ids {
-            new_container_ids.extend(self.get_child_container_ids(container_id).await?);
-        }
-        ngram_filter.container_ids = new_container_ids;
-
         let ngrams = self.store.get_ngrams_by_count(&ngram_filter).await?;
+        Ok(ngrams)
+    }
+
+    pub async fn get_ngrams_by_content(
+        &self,
+        content: &str,
+        sender_id: Option<String>,
+        container_ids: &[String],
+    ) -> Result<Vec<NgramsForByContentCommand>, Error> {
+        let expanded_container_ids = self
+            .expand_container_ids_with_children(container_ids)
+            .await?;
+
+        let ngrams = self
+            .store
+            .get_ngrams_by_content(&NgramsByContentFilter {
+                content: String::from(content),
+                sender_id,
+                container_ids: expanded_container_ids,
+            })
+            .await?;
+
         Ok(ngrams)
     }
 }

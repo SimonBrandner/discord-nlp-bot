@@ -9,9 +9,7 @@ pub fn display_ngram_list(ngrams: &[NgramForByCountCommand]) -> String {
 
     let data: Vec<Vec<String>> = ngrams
         .iter()
-        .map(|ngram: &NgramForByCountCommand| {
-            vec![ngram.content.clone(), ngram.occurrence_count.to_string()]
-        })
+        .map(|ngram: &NgramForByCountCommand| vec![ngram.content.clone(), ngram.count.to_string()])
         .collect();
 
     table.format(data)

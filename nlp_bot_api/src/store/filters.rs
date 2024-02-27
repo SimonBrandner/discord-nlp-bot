@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Order {
     Ascending,
     Descending,
@@ -19,7 +19,7 @@ impl FromStr for Order {
 }
 
 #[derive(Debug)]
-pub struct MostUsedNgramFilter {
+pub struct NgramsByCountFilter {
     pub sender_id: Option<String>,
     pub length: Option<u32>,
     pub container_ids: Vec<String>,
@@ -27,7 +27,7 @@ pub struct MostUsedNgramFilter {
     pub order: Order,
 }
 
-impl Default for MostUsedNgramFilter {
+impl Default for NgramsByCountFilter {
     fn default() -> Self {
         Self {
             sender_id: None,
@@ -37,4 +37,11 @@ impl Default for MostUsedNgramFilter {
             order: Order::Descending,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct NgramsByContentFilter {
+    pub content: String,
+    pub sender_id: Option<String>,
+    pub container_ids: Vec<String>,
 }

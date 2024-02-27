@@ -1,7 +1,11 @@
+use nlp_bot_api::displayers::chart::display_ngram_count_over_time;
 use nlp_bot_api::{
     displayers::ascii_table::display_ngram_list, processor::Processor, store::filters::Order,
 };
+use poise::CreateReply;
 use serenity::all::Member;
+use serenity::builder::CreateAttachment;
+use std::cmp::Ordering;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -41,13 +45,10 @@ async fn send_error_message(context: &Context<'_>, error: &str) -> Result<(), Er
 
 fn get_container_ids_from_context(
     context: &Context<'_>,
-    container_context: Option<String>,
+    container_context: &Option<String>,
 ) -> Result<Vec<String>, String> {
     let container_ids: Vec<String>;
-    match container_context
-        .unwrap_or_else(|| String::from("server"))
-        .as_str()
-    {
+    match container_context.as_deref().unwrap_or("server") {
         "channel" => container_ids = vec![context.channel_id().to_string()],
         "server" => match context.guild_id() {
             Some(guild_id) => container_ids = vec![guild_id.to_string()],
@@ -64,6 +65,32 @@ fn get_container_ids_from_context(
     };
 
     Ok(container_ids)
+}
+
+fn get_options_text(mut options: Vec<Option<(&str, String, bool)>>) -> String {
+    options.sort();
+    let filtered_options: Vec<(&str, String, bool)> =
+        options.iter().filter_map(|o| o.as_ref().cloned()).collect();
+
+    let mut text = String::new();
+    for (index, (name, description, code_block)) in filtered_options.iter().enumerate() {
+        if *code_block {
+            text += &format!("{} `{}`", name, description);
+        } else {
+            text += &format!("{} {}", name, description);
+        }
+
+        if filtered_options.len() < 2 {
+            continue;
+        }
+
+        match index.cmp(&(filtered_options.len() - 2)) {
+            Ordering::Less => text += ", ",
+            Ordering::Equal => text += " and ",
+            Ordering::Greater => (),
+        }
+    }
+    text
 }
 
 #[poise::command(
@@ -85,8 +112,8 @@ pub async fn ngrams_by_count(
     order_string: Option<String>,
 ) -> Result<(), Error> {
     let mut order: Option<Order> = None;
-    if let Some(order_string) = order_string {
-        match Order::from_str(&order_string) {
+    if let Some(order_string) = &order_string {
+        match Order::from_str(order_string) {
             Ok(order_string) => order = Some(order_string),
             Err(_) => {
                 return send_error_message(
@@ -97,7 +124,7 @@ pub async fn ngrams_by_count(
             }
         }
     }
-    let container_ids = match get_container_ids_from_context(&context, container_context) {
+    let container_ids = match get_container_ids_from_context(&context, &container_context) {
         Ok(container_ids) => container_ids,
         Err(error) => return send_error_message(&context, &error).await,
     };
@@ -118,7 +145,7 @@ pub async fn ngrams_by_count(
             length,
             amount,
             &container_ids,
-            order,
+            order.clone(),
         )
         .await;
 
@@ -134,15 +161,85 @@ pub async fn ngrams_by_count(
         return Ok(());
     }
 
-    let mut heading = String::from("Here's a table of n-grams by occurrence count");
-    if let Some(sender) = sender {
-        heading += &format!(" sent by {}", sender);
-    }
-    heading += ":";
+    let heading = format!(
+        "Here's a table of n-grams by occurrence count with {}",
+        get_options_text(vec![
+            sender.map(|s| ("sender", s.user.to_string(), false)),
+            container_context.map(|c| ("context", c, true)),
+            order_string.map(|o| ("order", o, true))
+        ])
+    );
 
     let ngrams_table = display_ngram_list(ngrams.as_slice());
     let ngrams_message_content = format_table(&ngrams_table, &heading);
     context.say(ngrams_message_content).await?;
+
+    Ok(())
+}
+
+#[poise::command(
+    prefix_command,
+    slash_command,
+    track_edits,
+    required_permissions = "SEND_MESSAGES"
+)]
+pub async fn ngrams_by_content(
+    context: Context<'_>,
+    #[rename = "ngram"]
+    #[description = "The ngram about which to get data."]
+    ngram_content: String,
+    #[rename = "sender"]
+    #[description = "Look for n-grams sent by this user."]
+    sender: Option<Member>,
+    #[rename = "context"]
+    #[description = "Look for n-grams sent in this context. Either `channel`, `server`, `discord` or `all`."]
+    container_context: Option<String>,
+) -> Result<(), Error> {
+    let processor = context.data().processor.clone();
+    let container_ids = match get_container_ids_from_context(&context, &container_context) {
+        Ok(container_ids) => container_ids,
+        Err(error) => return send_error_message(&context, &error).await,
+    };
+
+    let ngrams_result = processor
+        .get_ngrams_by_content(
+            &ngram_content,
+            sender.clone().map(|sender| sender.user.to_string()),
+            &container_ids,
+        )
+        .await;
+    let ngrams = match ngrams_result {
+        Ok(ngrams) => ngrams,
+        Err(e) => {
+            return send_error_message(&context, &e.to_string()).await;
+        }
+    };
+    if ngrams.is_empty() {
+        context.say("No n-grams found!").await?;
+        return Ok(());
+    }
+    let image = match display_ngram_count_over_time(&ngrams) {
+        Ok(image) => image,
+        Err(e) => {
+            return send_error_message(&context, &e.to_string()).await;
+        }
+    };
+    let message = format!(
+        "Here's a chart of the number of occurrences of the n-gram `{}` over time with {}",
+        ngram_content,
+        get_options_text(vec![
+            sender.map(|s| ("sender", s.user.to_string(), false)),
+            container_context.map(|c| ("context", c, true)),
+        ])
+    );
+
+    context
+        .send(
+            CreateReply::default()
+                .content(message)
+                .attachment(CreateAttachment::bytes(image, "chart.png")),
+        )
+        .await?;
 
     Ok(())
 }

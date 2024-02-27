@@ -52,5 +52,10 @@ pub struct NgramForStore {
 
 pub struct NgramForByCountCommand {
     pub content: String,
-    pub occurrence_count: u32,
+    pub count: u32,
+}
+
+pub struct NgramsForByContentCommand {
+    pub count: u32,
+    pub time: i64,
 }
