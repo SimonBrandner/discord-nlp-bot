@@ -56,6 +56,7 @@ impl From<ImageError> for Error {
     }
 }
 
+#[allow(clippy::missing_panics_doc)]
 pub fn display_ngram_count_over_time(
     ngrams: &[NgramsForByContentCommand],
 ) -> Result<Vec<u8>, Error> {
@@ -105,8 +106,9 @@ pub fn display_ngram_count_over_time(
     }
 
     let mut cursor = Cursor::new(Vec::new());
-    let image = RgbImage::from_raw(CHART_WIDTH, CHART_HEIGHT, image_buffer)
-        .expect("Buffer not big enough!");
+    #[allow(clippy::unwrap_used)]
+    // This cannot return None, if we are using the same correct constants everywhere
+    let image = RgbImage::from_raw(CHART_WIDTH, CHART_HEIGHT, image_buffer).unwrap();
     image.write_to(&mut cursor, ImageFormat::Png)?;
 
     Ok(cursor.into_inner())
