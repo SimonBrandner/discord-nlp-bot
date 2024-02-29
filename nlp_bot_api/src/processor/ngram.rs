@@ -9,8 +9,9 @@ const SECONDS_IN_WEEK: i64 = 7 * 24 * 60 * 60;
 
 pub const MAX_NGRAM_LENGTH: u8 = 5;
 lazy_static! {
-    pub static ref ALLOWED_NGRAM_CHARACTERS_REGEX: Regex =
-        Regex::new(ALLOWED_NGRAM_CHARACTERS).expect("Failed to create regex!");
+    pub static ref ALLOWED_NGRAM_CHARACTERS_REGEX: Regex = #[allow(clippy::unwrap_used)] // A failing regex would be discovered on first run
+    Regex::new(ALLOWED_NGRAM_CHARACTERS)
+        .unwrap();
 }
 
 fn get_ngram(words: &[String], ngram_length: u8, start_index: usize) -> Option<&[String]> {
