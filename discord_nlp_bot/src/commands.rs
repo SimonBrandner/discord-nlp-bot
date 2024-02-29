@@ -183,7 +183,7 @@ pub async fn ngrams_by_count(
     track_edits,
     required_permissions = "SEND_MESSAGES"
 )]
-pub async fn ngrams_by_content(
+pub async fn ngram_by_content(
     context: Context<'_>,
     #[rename = "ngram"]
     #[description = "The ngram about which to get data."]
@@ -202,7 +202,7 @@ pub async fn ngrams_by_content(
     };
 
     let ngrams_result = processor
-        .get_ngrams_by_content(
+        .get_ngram_by_content(
             &ngram_content,
             sender.clone().map(|sender| sender.user.to_string()),
             &container_ids,

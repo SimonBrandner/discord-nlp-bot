@@ -201,7 +201,7 @@ impl Processor {
         Ok(ngrams)
     }
 
-    pub async fn get_ngrams_by_content(
+    pub async fn get_ngram_by_content(
         &self,
         content: &str,
         sender_id: Option<String>,
@@ -213,7 +213,7 @@ impl Processor {
 
         let ngrams = self
             .store
-            .get_ngrams_by_content(&NgramsByContentFilter {
+            .get_ngram_by_content(&NgramsByContentFilter {
                 content: String::from(content),
                 sender_id,
                 container_ids: expanded_container_ids,

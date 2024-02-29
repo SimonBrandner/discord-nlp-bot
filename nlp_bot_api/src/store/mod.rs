@@ -320,7 +320,7 @@ impl Sql {
         Ok(ngrams)
     }
 
-    pub async fn get_ngrams_by_content(
+    pub async fn get_ngram_by_content(
         &self,
         filter: &NgramsByContentFilter,
     ) -> Result<Vec<NgramsForByContentCommand>, Error> {
