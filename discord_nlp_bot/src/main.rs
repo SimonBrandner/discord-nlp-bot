@@ -48,5 +48,7 @@ async fn main() {
 
     log::info!("Starting bot...");
     tokio::spawn(async move { processor_for_caching_ngrams.cache_ngrams().await });
-    start(bot, processor_for_bot, configuration.discord_token).await;
+    if let Err(e) = start(bot, processor_for_bot, configuration.discord_token).await {
+        println!("Client error: {}", e);
+    };
 }

@@ -23,7 +23,11 @@ enum PaginationDirection {
     Down { message_id: MessageId },
 }
 
-pub async fn start(bot: Bot, processor: Arc<Processor>, token: String) {
+pub async fn start(
+    bot: Bot,
+    processor: Arc<Processor>,
+    token: String,
+) -> Result<(), serenity::Error> {
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
     let options = FrameworkOptions {
         commands: vec![ngrams_by_count(), ngram_by_content()],
@@ -52,13 +56,9 @@ pub async fn start(bot: Bot, processor: Arc<Processor>, token: String) {
     let mut client = Client::builder(token, intents)
         .event_handler(bot)
         .framework(framework)
-        .await
-        .expect("Failed to build client");
+        .await?;
 
-    // start listening for events by starting a single shard
-    if let Err(why) = client.start().await {
-        println!("Client error: {why:?}");
-    }
+    client.start().await
 }
 
 pub struct Bot {
