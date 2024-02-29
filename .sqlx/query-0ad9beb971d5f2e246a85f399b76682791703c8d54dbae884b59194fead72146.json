@@ -4,7 +4,7 @@
   "describe": {
     "columns": [
       {
-        "name": "message_id",
+        "name": "entry_id",
         "ordinal": 0,
         "type_info": "Text"
       },
