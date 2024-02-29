@@ -24,11 +24,21 @@ async fn main() {
     env_logger::init();
 
     let command_line_arguments = CommandLineArguments::parse();
-    let configuration = read_configuration_from_file(&command_line_arguments.configuration_file);
+    let configuration =
+        match read_configuration_from_file(&command_line_arguments.configuration_file) {
+            Ok(c) => c,
+            Err(e) => {
+                println!("Failed to read configuration file: {}", e);
+                return;
+            }
+        };
 
     let store = match Sql::new(&configuration.sql_database_path).await {
         Ok(store) => store,
-        Err(e) => panic!("Failed to construct store: {}", e),
+        Err(e) => {
+            println!("Failed to construct store: {}", e);
+            return;
+        }
     };
 
     let processor = Arc::new(Processor::new(store));
