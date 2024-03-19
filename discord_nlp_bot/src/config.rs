@@ -21,7 +21,7 @@ impl From<serde_json::Error> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::FileError(e) => write!(f, "Database error: {}", e),
+            Self::FileError(e) => write!(f, "File error: {}", e),
             Self::SerdeError(e) => write!(f, "Serde error: {}", e),
         }
     }
