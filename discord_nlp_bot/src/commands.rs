@@ -111,6 +111,11 @@ pub async fn ngrams_by_count(
     #[rename = "order"]
     order_string: Option<String>,
 ) -> Result<(), Error> {
+    // This command can take some time
+    if let Err(error) = context.defer().await {
+        return send_error_message(&context, &error.to_string()).await;
+    };
+
     let mut order: Option<Order> = None;
     if let Some(order_string) = &order_string {
         match Order::from_str(order_string) {
@@ -195,6 +200,11 @@ pub async fn ngram_by_content(
     #[description = "Look for n-grams sent in this context. Either `channel`, `server`, `discord` or `all`."]
     container_context: Option<String>,
 ) -> Result<(), Error> {
+    // This command can take some time
+    if let Err(error) = context.defer().await {
+        return send_error_message(&context, &error.to_string()).await;
+    };
+
     let processor = context.data().processor.clone();
     let container_ids = match get_container_ids_from_context(&context, &container_context) {
         Ok(container_ids) => container_ids,
