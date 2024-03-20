@@ -211,7 +211,7 @@ impl Processor {
             .expand_container_ids_with_children(container_ids)
             .await?;
 
-        let ngrams = self
+        let mut ngrams = self
             .store
             .get_ngram_by_content(&NgramsByContentFilter {
                 content: String::from(content),
@@ -219,6 +219,8 @@ impl Processor {
                 container_ids: expanded_container_ids,
             })
             .await?;
+
+        ngram::fill_gaps(ngrams.as_mut());
 
         Ok(ngrams)
     }

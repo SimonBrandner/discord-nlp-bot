@@ -43,6 +43,41 @@ pub const fn get_ngram_time(time: i64) -> i64 {
     time - (time % SECONDS_IN_WEEK)
 }
 
+pub fn fill_gaps(ngrams: &mut Vec<NgramsForByContentCommand>) {
+    if ngrams.len() < 2 {
+        return;
+    }
+
+    for i in 0..(ngrams.len() - 2) {
+        let diff = ngrams[i + 1].time - ngrams[i].time;
+
+        let n = i + 1;
+        if diff > 2 * SECONDS_IN_WEEK {
+            ngrams.splice(
+                n..n,
+                [
+                    NgramsForByContentCommand {
+                        time: ngrams[i].time + SECONDS_IN_WEEK,
+                        count: 0,
+                    },
+                    NgramsForByContentCommand {
+                        time: ngrams[i + 1].time - SECONDS_IN_WEEK,
+                        count: 0,
+                    },
+                ],
+            );
+        } else if diff > SECONDS_IN_WEEK {
+            ngrams.splice(
+                n..n,
+                [NgramsForByContentCommand {
+                    time: ngrams[i].time + SECONDS_IN_WEEK,
+                    count: 0,
+                }],
+            );
+        }
+    }
+}
+
 pub struct NgramForStore {
     pub content: String,
     pub length: u32,
@@ -56,6 +91,7 @@ pub struct NgramForByCountCommand {
     pub count: u32,
 }
 
+#[derive(Clone)]
 pub struct NgramsForByContentCommand {
     pub count: u32,
     pub time: i64,
