@@ -48,20 +48,20 @@ pub fn fill_gaps(ngrams: &mut Vec<NgramsForByContentCommand>) {
         return;
     }
 
-    for i in 0..(ngrams.len() - 2) {
-        let diff = ngrams[i + 1].time - ngrams[i].time;
+    for i in 1..(ngrams.len() - 1) {
+        let diff = ngrams[i].time - ngrams[i - 1].time;
 
-        let n = i + 1;
+        let n = i;
         if diff > 2 * SECONDS_IN_WEEK {
             ngrams.splice(
                 n..n,
                 [
                     NgramsForByContentCommand {
-                        time: ngrams[i].time + SECONDS_IN_WEEK,
+                        time: ngrams[i - 1].time + SECONDS_IN_WEEK,
                         count: 0,
                     },
                     NgramsForByContentCommand {
-                        time: ngrams[i + 1].time - SECONDS_IN_WEEK,
+                        time: ngrams[i].time - SECONDS_IN_WEEK,
                         count: 0,
                     },
                 ],
@@ -70,7 +70,7 @@ pub fn fill_gaps(ngrams: &mut Vec<NgramsForByContentCommand>) {
             ngrams.splice(
                 n..n,
                 [NgramsForByContentCommand {
-                    time: ngrams[i].time + SECONDS_IN_WEEK,
+                    time: ngrams[i - 1].time + SECONDS_IN_WEEK,
                     count: 0,
                 }],
             );
